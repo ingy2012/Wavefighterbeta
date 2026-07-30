@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TRIFORM: Wave Arena - Multiplayer</title>
+<title>TRIFORM: Wave Arena</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Segoe UI',Arial,sans-serif;user-select:none;-webkit-user-select:none;}
   #c{display:block;width:100vw;height:100vh;}
@@ -46,23 +46,6 @@
   
   button.big{background:linear-gradient(135deg,#ff8a3b,#ff3b6b);border:none;color:#fff;font-size:16px;font-weight:700;letter-spacing:2px;padding:12px 36px;border-radius:24px;cursor:pointer;box-shadow:0 4px 20px rgba(255,80,80,.4);}
   button.big:active{transform:scale(.96);}
-  
-  /* Multiplayer Hub Specific Styles */
-  button.blue-btn { background:linear-gradient(135deg,#3b8aff,#3bd0ff); box-shadow:0 4px 20px rgba(59,138,255,.4); margin: 0 10px; }
-  button.green-btn { background:linear-gradient(135deg,#3bff8a,#3bffd8); box-shadow:0 4px 20px rgba(59,255,138,.4); margin: 0 10px; color:#000; }
-  
-  .lobby-panel { background: rgba(20,25,35,0.95); padding: 2rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 500px; text-align: left;}
-  .lobby-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; margin-bottom: 16px; font-size: 16px; }
-  .player-list-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 8px;}
-  
-  #notification-toast {
-      position: absolute; top: 20px; right: -400px; background: rgba(49, 130, 206, 0.95); padding: 15px 25px;
-      border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 50;
-      transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      display: flex; align-items: center; gap: 15px; border-left: 4px solid #90cdf4; color: white; pointer-events:none;
-  }
-  #notification-toast.show { right: 20px; }
-  
   #statLine{margin-top:12px;font-size:13px;opacity:.8;}
   .hidden{display:none !important;}
   #stateTag{font-size:11px;font-weight:700;letter-spacing:1px;margin-top:4px;padding:2px 8px;border-radius:6px;display:inline-block;}
@@ -96,35 +79,72 @@
   .touchBtn:active{background:rgba(255,255,255,.35);}
   #tPause{position:absolute;left:16px;top:16px;width:38px;height:38px;font-size:10px;}
 
+  /* Main Action Cluster */
   #touchMainButtons{position:absolute;display:flex;gap:10px;align-items:flex-end;pointer-events:auto;}
   .mainBtnCol{display:flex;flex-direction:column;gap:8px;align-items:center;}
   #tFire{width:72px;height:72px;font-size:13px;background:rgba(255,100,60,.35);border-color:rgba(255,140,100,.6);}
   #tAlt{width:54px;height:54px;font-size:10px;background:rgba(60,140,255,.35);border-color:rgba(100,170,255,.6);}
   #tJump,#tSprint{width:44px;height:44px;font-size:9.5px;}
 
+  /* Sub Action / Switcher Controls */
   #touchActionGrid{position:absolute;display:flex;gap:6px;pointer-events:auto;}
   #touchActionGrid .touchBtn{width:42px;height:36px;font-size:9.5px;border-radius:8px;background:rgba(255,255,255,.12);}
 
+  /* Landscape Layout */
   @media (orientation: landscape) {
     #radar{width:110px;height:110px;}
     .bar-wrap{left:16px;bottom:16px;width:200px;}
     #styleBox{right:140px;top:16px;text-align:right;}
     #topCenter{left:50%;transform:translateX(-50%);text-align:center;top:12px;}
+    
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:20px;bottom:95px;width:110px;height:110px;}
     #touchJoystickKnob{left:32px;top:32px;width:46px;height:46px;}
+    
+    /* Shift main action cluster LEFT */
     #touchMainButtons{right:85px;bottom:20px;}
-    #touchActionGrid{ left:50%; bottom:16px; transform:translateX(-50%); flex-direction:row; justify-content:center; }
+    
+    #touchActionGrid{
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      flex-direction:row;
+      justify-content:center;
+    }
   }
 
+  /* Portrait Layout */
   @media (orientation: portrait) {
     #radar{width:90px;height:90px;top:10px;right:10px;}
     .bar-wrap{left:16px;bottom:16px;width:180px;}
     #styleBox{right:110px;top:12px;text-align:right;}
-    #topCenter{ left:64px; top:12px; transform:none; text-align:left; }
+    
+    /* Move wave/score text to the left side in portrait to prevent overlap with style text */
+    #topCenter{
+      left:64px;
+      top:12px;
+      transform:none;
+      text-align:left;
+    }
+    
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:16px;bottom:100px;width:105px;height:105px;}
     #touchJoystickKnob{left:30px;top:30px;width:44px;height:44px;}
+    
+    /* Main action buttons shifted left */
     #touchMainButtons{right:24px;bottom:24px;}
-    #touchActionGrid{ right:16px; bottom:230px; display:grid; grid-template-columns:repeat(4,42px); gap:6px; justify-end; }
+    
+    /* Raise style/weapon switcher grid UP higher so it doesn't crowd action buttons */
+    #touchActionGrid{
+      right:16px;
+      bottom:230px;
+      display:grid;
+      grid-template-columns:repeat(4,42px);
+      gap:6px;
+      justify-end;
+    }
+    #touchActionGrid .touchBtn:nth-child(1), #touchActionGrid .touchBtn:nth-child(2) { transform: translateY(0); }
+    #touchActionGrid .touchBtn:nth-child(3), #touchActionGrid .touchBtn:nth-child(4) { transform: translateY(0); }
   }
 </style>
 </head>
@@ -184,7 +204,6 @@
   </div>
 </div>
 
-<!-- Main Start Screen -->
 <div class="overlay" id="startOverlay">
   <h1>TRIFORM: WAVE ARENA</h1>
   <h2>fight endless waves in the maze &mdash; switch combat styles on the fly</h2>
@@ -202,49 +221,25 @@
       <div>D-pad Up/Down (R/F): cycle weapon or RT spell</div>
       <div>D-pad Left/Right (arrows): cycle arrow element or LT spell</div>
       <div>FPS: Rifle / Sniper / Shotgun / Dual Pistols</div>
+      <div>Melee: Sword+Shield / Claymore / Spear / Bow</div>
+      <div>RT spells: Fireball / Ice Spike / Lightning</div>
+      <div>LT spells: Poison Bolt / Air Burst / Teleport / Aegis Shield</div>
     </div>
     <div class="cgroup">
       <h3>ACTIONS</h3>
       <div>Primary: RT / Left Click (swing, shoot, charge fire/ice/lightning/bow)</div>
       <div>Secondary: LT / Right Click</div>
+      <div> &bull; FPS: toggles zoom (Sniper has 2 stages)</div>
+      <div> &bull; Dual Pistols: RT fires right gun, LT fires left</div>
+      <div> &bull; Sword+Shield: hold to block &nbsp;|&nbsp; Bow: toggles zoom</div>
+      <div> &bull; Magic: casts selected LT spell (Aegis Shield = brief full immunity)</div>
       <div>Unleash shout (Magic only): Y / T key</div>
       <div>Radar top-right shows enemies and walls</div>
     </div>
   </div>
-  <div style="display:flex; gap: 15px; margin-top: 15px;">
-      <button class="big" id="startBtn">PLAY SOLO</button>
-      <button class="big blue-btn" id="onlineLobbyBtn">ONLINE LOBBY</button>
-      <button class="big green-btn" id="localSplitBtn">LOCAL CO-OP</button>
-  </div>
+  <button class="big" id="startBtn">ENTER ARENA</button>
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
-</div>
-
-<!-- Multiplayer Name Entry & Lobby -->
-<div class="overlay hidden" id="lobbyOverlay">
-  <div class="lobby-panel" id="nameEntryPanel">
-      <h2 style="font-size: 24px; color:#3bd0ff; margin-bottom: 15px; margin-top:0;">Connect to Servers</h2>
-      <input type="text" id="playerNameInput" class="lobby-input" placeholder="Enter your pilot name..." maxlength="15">
-      <button id="btnLogin" class="big blue-btn" style="width: 100%; margin:0;">CONNECT</button>
-      <button id="btnLobbyBack" class="big" style="width: 100%; margin: 10px 0 0 0; background: #555;">BACK</button>
-  </div>
-
-  <div class="lobby-panel hidden" id="activeLobbyPanel">
-      <h2 style="font-size: 24px; color:#3bd0ff; margin-bottom: 15px; margin-top:0;">Online Pilots</h2>
-      <div id="playerList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
-          <!-- Players injected here via Firebase -->
-          <div style="color: #888; text-align:center;">Scanning for signals...</div>
-      </div>
-      <button id="btnLeaveLobby" class="big" style="width: 100%; margin:0; background: #555;">LEAVE LOBBY</button>
-  </div>
-</div>
-
-<!-- Non-intrusive In-Game Notification -->
-<div id="notification-toast">
-    <div>
-        <div style="font-weight: bold; font-size: 16px;" id="toast-title">New Challenger!</div>
-        <div style="font-size: 13px; color: #bee3f8;" id="toast-desc">PilotX wants to join. Press ESC/Pause to manage.</div>
-    </div>
 </div>
 
 <div class="overlay hidden" id="deathOverlay">
@@ -255,14 +250,6 @@
 
 <div class="overlay hidden" id="pauseOverlay">
   <h1 style="font-size:32px;">PAUSED</h1>
-  
-  <div id="pending-requests-container" class="hidden" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 100%; max-width: 400px; text-align:left;">
-      <h3 style="color: #ffb43c; margin: 0 0 10px 0; font-size: 14px;">Incoming Join Requests</h3>
-      <div id="requests-list" style="display:flex; flex-direction:column; gap:8px;">
-          <!-- Requests injected here -->
-      </div>
-  </div>
-
   <button class="big" id="resumeBtn">RESUME</button>
   <button class="big" id="pauseSettingsBtn" style="margin-top:12px;background:linear-gradient(135deg,#3b8aff,#3bd0ff);">SETTINGS</button>
 </div>
@@ -321,40 +308,18 @@ const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
-// Enable scissor test for Splitscreen
-renderer.setScissorTest(false); 
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1220);
 scene.fog = new THREE.Fog(0x0b1220, 22, 85);
 
-// Camera 1 (Player 1)
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 300);
-// Camera 2 (Player 2 Splitscreen)
-const camera2 = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 300);
 const baseFOV = 75;
-
-// ==========================================
-// STATE DECLARED HERE BEFORE RESIZE IS CALLED
-// ==========================================
-const state = { wave:0, enemiesRemaining:0, betweenWaves:true, score:0, precisionMultiplier:1, isSplitscreen: false };
-
-// Layer magic to hide P1 body from P1 camera, but P2 can see P1
-camera.layers.enable(0);
-camera.layers.enable(2); // Can see Player 2 layer
-camera2.layers.enable(0);
-camera2.layers.enable(1); // Can see Player 1 layer
 
 function resize(){
   renderer.setSize(innerWidth, innerHeight);
-  if(state.isSplitscreen) {
-      camera.aspect = (innerWidth/2)/innerHeight;
-      camera2.aspect = (innerWidth/2)/innerHeight;
-  } else {
-      camera.aspect = innerWidth/innerHeight;
-  }
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  camera2.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
 resize();
@@ -541,14 +506,6 @@ function drawRadar(){
   radarCtx.closePath();
   radarCtx.fillStyle = '#ffffff';
   radarCtx.fill();
-  
-  if(state.isSplitscreen && player2.alive) {
-      const pp2 = worldToRadar(player2.pos.x, player2.pos.z);
-      radarCtx.beginPath();
-      radarCtx.arc(pp2.rx, pp2.ry, 4, 0, Math.PI*2);
-      radarCtx.fillStyle = '#ff66b2';
-      radarCtx.fill();
-  }
 }
 
 function resolveWallCollision(pos, margin){
@@ -573,11 +530,6 @@ function isInsideWall(pos, margin){
   return false;
 }
 
-// ---------------------------------
-// PLAYER 1 & PLAYER 2 STATE
-// ---------------------------------
-const EYE_H = 1.7;
-
 const player = {
   pos: new THREE.Vector3(0,1.7,0),
   yaw: 0, pitch: 0,
@@ -594,24 +546,7 @@ const player = {
   cooldowns: {primary:0, secondary:0, shout:0},
   alive:true,
 };
-
-// Player 2 State
-const player2 = {
-  pos: new THREE.Vector3(2,1.7,2),
-  yaw: 0, pitch: 0,
-  vy: 0, grounded: true,
-  hp: 100, maxHp: 100,
-  alive: true
-};
-
-// Player Meshes (so they can see each other in splitscreen)
-const p1Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshStandardMaterial({color: 0x3bd0ff}));
-p1Mesh.layers.set(1); // Seen by Camera 2 (P2)
-scene.add(p1Mesh);
-
-const p2Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshStandardMaterial({color: 0xff3b6b}));
-p2Mesh.layers.set(2); // Seen by Camera 1 (P1)
-scene.add(p2Mesh);
+const EYE_H = 1.7;
 
 const STYLES = ['fps','melee','magic'];
 const FPS_WEAPONS = [
@@ -643,6 +578,285 @@ const LT_SPELLS = [
   {name:'Teleport', manaCost:20, cd:4, color:0xffffff},
   {name:'Aegis Shield', manaCost:40, cd:22, duration:3, color:0x66d9ff},
 ];
+
+// ================= VIEWMODEL (first-person weapon / hand visuals) =================
+// A group synced each frame to the camera's position+orientation, holding simple
+// low-poly stand-ins for the current weapon or spellcasting hands, plus small
+// procedural animations (recoil, swing, block, bow draw, spell charge/cast).
+const vmGroup = new THREE.Group();
+scene.add(vmGroup);
+let vmBobT = 0;
+const vmState = {
+  recoil: {rifle:0, sniper:0, shotgun:0, pistolR:0, pistolL:0},
+  swinging:false, swingT:0, swingDur:0.22,
+  blockAmt:0,
+  castFlashR:0, castFlashL:0,
+};
+
+function vBox(w,h,d,mat){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); }
+function vCyl(r1,r2,h,mat,seg){ return new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg||8), mat); }
+function makePivot(mesh, x,y,z, rx,ry,rz){
+  const p = new THREE.Group();
+  p.add(mesh);
+  p.position.set(x,y,z);
+  p.rotation.set(rx||0, ry||0, rz||0);
+  p.userData.base = {x,y,z, rx:rx||0, ry:ry||0, rz:rz||0};
+  return p;
+}
+function applyRecoil(pivot, amt){
+  const b = pivot.userData.base;
+  if(!amt){ pivot.position.set(b.x,b.y,b.z); pivot.rotation.x=b.rx; return; }
+  pivot.position.set(b.x, b.y + amt*0.02, b.z + amt*0.1);
+  pivot.rotation.x = b.rx - amt*0.22;
+}
+function applySwing(pivot, t, dur){
+  const b = pivot.userData.base;
+  const p = Math.min(t/dur, 1);
+  const s = Math.sin(p*Math.PI);
+  pivot.position.set(b.x - s*0.08, b.y, b.z - s*0.15);
+  pivot.rotation.y = b.ry - s*0.9;
+  pivot.rotation.x = b.rx - s*0.4;
+}
+function applyBlock(pivot, amt){
+  const b = pivot.userData.base;
+  pivot.position.set(b.x - amt*0.06, b.y + amt*0.09, b.z - amt*0.16);
+}
+function applyBowDraw(pivot, frac){
+  const bowMesh = pivot.children[0];
+  const sGeo = bowMesh.userData.stringGeo;
+  const arrow = bowMesh.userData.arrowShaft;
+  const midZ = 0.06 + frac*0.32;
+  sGeo.attributes.position.setXYZ(1, 0, 0, midZ);
+  sGeo.attributes.position.needsUpdate = true;
+  arrow.visible = frac > 0.02;
+  arrow.position.z = midZ - 0.3;
+  const b = pivot.userData.base;
+  pivot.position.set(b.x, b.y, b.z + frac*0.03);
+}
+function triggerGunRecoil(key, mag){ vmState.recoil[key] = (mag===undefined?1:mag); }
+function triggerSwing(){ vmState.swinging = true; vmState.swingT = 0; }
+
+const vmMetal = new THREE.MeshStandardMaterial({color:0x2b2f34, roughness:0.5, metalness:0.6});
+const vmGrip = new THREE.MeshStandardMaterial({color:0x181818, roughness:0.85});
+const vmWood = new THREE.MeshStandardMaterial({color:0x6b4a2f, roughness:0.8});
+const vmBlade = new THREE.MeshStandardMaterial({color:0xcbd5e1, roughness:0.25, metalness:0.85});
+const vmHilt = new THREE.MeshStandardMaterial({color:0x3a2a18, roughness:0.7});
+const vmShieldMat = new THREE.MeshStandardMaterial({color:0x4a5a3a, roughness:0.6, metalness:0.3});
+const vmSkin = new THREE.MeshStandardMaterial({color:0xd8b48c, roughness:0.75});
+
+function buildRifle(){
+  const g = new THREE.Group();
+  g.add(vBox(0.09,0.11,0.55,vmMetal));
+  const barrel = vCyl(0.02,0.02,0.4,vmMetal); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0.01,-0.46);
+  const stock = vBox(0.07,0.09,0.22,vmGrip); stock.position.set(0,-0.01,0.36);
+  const grip = vBox(0.05,0.14,0.06,vmGrip); grip.position.set(0,-0.11,0.14);
+  const mag = vBox(0.05,0.16,0.07,vmMetal); mag.position.set(0,-0.13,0.02); mag.rotation.x=0.25;
+  g.add(barrel,stock,grip,mag);
+  return g;
+}
+function buildSniper(){
+  const g = new THREE.Group();
+  g.add(vBox(0.08,0.1,0.75,vmMetal));
+  const barrel = vCyl(0.018,0.018,0.55,vmMetal); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0,-0.64);
+  const scope = vCyl(0.035,0.035,0.28,vmMetal); scope.rotation.x=Math.PI/2; scope.position.set(0,0.09,-0.1);
+  const stock = vBox(0.06,0.09,0.3,vmGrip); stock.position.set(0,-0.01,0.5);
+  const grip = vBox(0.05,0.14,0.06,vmGrip); grip.position.set(0,-0.11,0.2);
+  g.add(barrel,scope,stock,grip);
+  return g;
+}
+function buildShotgunV(){
+  const g = new THREE.Group();
+  const body = vBox(0.1,0.12,0.4,vmWood); body.position.set(0,0,0);
+  const barrel = vCyl(0.03,0.03,0.45,vmMetal); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0.02,-0.4);
+  const pump = vBox(0.09,0.06,0.14,vmMetal); pump.position.set(0,-0.05,-0.3);
+  const stock = vBox(0.07,0.1,0.24,vmWood); stock.position.set(0,-0.01,0.32);
+  g.add(body,barrel,pump,stock);
+  return g;
+}
+function buildPistolV(){
+  const g = new THREE.Group();
+  const body = vBox(0.055,0.09,0.24,vmMetal); body.position.set(0,0,0);
+  const barrel = vCyl(0.014,0.014,0.14,vmMetal); barrel.rotation.x=Math.PI/2; barrel.position.set(0,0.015,-0.16);
+  const grip = vBox(0.045,0.13,0.06,vmGrip); grip.position.set(0,-0.1,0.14);
+  g.add(body,barrel,grip);
+  return g;
+}
+
+const vmFps = new THREE.Group(); vmGroup.add(vmFps);
+const pivotRifle   = makePivot(buildRifle(),   0.22,-0.22,-0.4);
+const pivotSniper  = makePivot(buildSniper(),  0.22,-0.22,-0.4);
+const pivotShotgun = makePivot(buildShotgunV(),0.22,-0.23,-0.36);
+const pivotPistolR = makePivot(buildPistolV(), 0.22,-0.2,-0.32);
+const pivotPistolL = makePivot(buildPistolV(),-0.22,-0.2,-0.32);
+vmFps.add(pivotRifle,pivotSniper,pivotShotgun,pivotPistolR,pivotPistolL);
+
+function buildSwordMesh(len,width){
+  const g = new THREE.Group();
+  const blade = vBox(width,len,0.028,vmBlade); blade.position.set(0,len/2+0.1,0);
+  const guard = vBox(width*3.2,0.035,0.05,vmHilt); guard.position.set(0,0.08,0);
+  const hilt = vCyl(0.024,0.024,0.18,vmHilt); hilt.position.set(0,-0.03,0);
+  g.add(blade,guard,hilt);
+  return g;
+}
+function buildShieldMesh(){
+  const g = new THREE.Group();
+  const disc = vCyl(0.17,0.17,0.045,vmShieldMat,16); disc.rotation.x=Math.PI/2;
+  const boss = vCyl(0.05,0.05,0.06,vmMetal,10); boss.rotation.x=Math.PI/2; boss.position.z=-0.03;
+  g.add(disc,boss);
+  return g;
+}
+function buildSpearMesh(){
+  const g = new THREE.Group();
+  const shaft = vCyl(0.018,0.018,0.95,vmHilt); shaft.position.set(0,0,0);
+  const tip = vCyl(0.001,0.032,0.2,vmBlade,6); tip.position.set(0,0.57,0);
+  g.add(shaft,tip);
+  return g;
+}
+function buildBowMesh(){
+  const g = new THREE.Group();
+  const topLimb = vBox(0.02,0.36,0.02,vmHilt); topLimb.position.set(0,0.2,0); topLimb.rotation.z=0.22;
+  const botLimb = vBox(0.02,0.36,0.02,vmHilt); botLimb.position.set(0,-0.2,0); botLimb.rotation.z=-0.22;
+  g.add(topLimb,botLimb);
+  const stringGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0.36,0.06),
+    new THREE.Vector3(0,0,0.06),
+    new THREE.Vector3(0,-0.36,0.06),
+  ]);
+  const string = new THREE.Line(stringGeo, new THREE.LineBasicMaterial({color:0xe5e5e5}));
+  g.add(string);
+  g.userData.stringGeo = stringGeo;
+  const arrowShaft = vCyl(0.008,0.008,0.5,new THREE.MeshBasicMaterial({color:0xe8c07a}));
+  arrowShaft.rotation.x = Math.PI/2;
+  arrowShaft.visible = false;
+  g.add(arrowShaft);
+  g.userData.arrowShaft = arrowShaft;
+  return g;
+}
+
+const vmMelee = new THREE.Group(); vmGroup.add(vmMelee);
+const pivotSword    = makePivot(buildSwordMesh(0.46,0.06), 0.22,-0.22,-0.35, -0.1,0,0);
+const pivotShield   = makePivot(buildShieldMesh(),        -0.24,-0.2,-0.32);
+const pivotClaymore = makePivot(buildSwordMesh(0.72,0.09), 0.04,-0.24,-0.42, -0.12,0,0);
+const pivotSpear    = makePivot(buildSpearMesh(),          0.2,-0.16,-0.35, -0.55,0.15,0);
+const pivotBow      = makePivot(buildBowMesh(),           -0.06,-0.13,-0.42, 0.06,0.35,0);
+vmMelee.add(pivotSword,pivotShield,pivotClaymore,pivotSpear,pivotBow);
+
+function buildHandMesh(){
+  const g = new THREE.Group();
+  const palm = vBox(0.11,0.06,0.13,vmSkin);
+  const wrist = vCyl(0.035,0.045,0.16,vmSkin); wrist.rotation.x=Math.PI/2; wrist.position.set(0,-0.02,0.1);
+  g.add(palm,wrist);
+  return g;
+}
+function buildGlowOrb(){
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.045,10,10), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.95}));
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.078,10,10), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.32}));
+  g.add(core,halo);
+  g.userData.core = core; g.userData.halo = halo;
+  return g;
+}
+const vmMagic = new THREE.Group(); vmGroup.add(vmMagic);
+const handR = buildHandMesh(); handR.position.set(0.24,-0.24,-0.42); handR.userData.base = {x:0.24,y:-0.24,z:-0.42};
+const handL = buildHandMesh(); handL.position.set(-0.24,-0.24,-0.42); handL.userData.base = {x:-0.24,y:-0.24,z:-0.42};
+const glowR = buildGlowOrb(); glowR.position.set(0,0.05,-0.07); handR.add(glowR);
+const glowL = buildGlowOrb(); glowL.position.set(0,0.05,-0.07); handL.add(glowL);
+const glowLightR = new THREE.PointLight(0xffffff, 0, 2.4); glowLightR.position.copy(glowR.position); handR.add(glowLightR);
+const glowLightL = new THREE.PointLight(0xffffff, 0, 2.4); glowLightL.position.copy(glowL.position); handL.add(glowLightL);
+vmMagic.add(handR,handL);
+
+function updateViewmodel(dt){
+  vmGroup.position.copy(camera.position);
+  vmGroup.quaternion.copy(camera.quaternion);
+
+  const moving = moveVec.lengthSq() > 0.0001;
+  vmBobT += dt*(moving?9:2.6);
+  vmGroup.position.y += Math.sin(vmBobT)*(moving?0.012:0.004);
+
+  vmFps.visible = player.style==='fps';
+  vmMelee.visible = player.style==='melee';
+  vmMagic.visible = player.style==='magic';
+
+  if(vmFps.visible){
+    pivotRifle.visible   = player.fpsSlot===0;
+    pivotSniper.visible  = player.fpsSlot===1;
+    pivotShotgun.visible = player.fpsSlot===2;
+    pivotPistolR.visible = player.fpsSlot===3;
+    pivotPistolL.visible = player.fpsSlot===3;
+    for(const k in vmState.recoil) vmState.recoil[k] = Math.max(0, vmState.recoil[k]-dt*6);
+    applyRecoil(pivotRifle,   player.fpsSlot===0?vmState.recoil.rifle:0);
+    applyRecoil(pivotSniper,  player.fpsSlot===1?vmState.recoil.sniper:0);
+    applyRecoil(pivotShotgun, player.fpsSlot===2?vmState.recoil.shotgun:0);
+    applyRecoil(pivotPistolR, player.fpsSlot===3?vmState.recoil.pistolR:0);
+    applyRecoil(pivotPistolL, player.fpsSlot===3?vmState.recoil.pistolL:0);
+  }
+
+  if(vmMelee.visible){
+    const slot = player.meleeSlot;
+    pivotSword.visible    = slot===0;
+    pivotShield.visible   = slot===0;
+    pivotClaymore.visible = slot===1;
+    pivotSpear.visible    = slot===2;
+    pivotBow.visible      = slot===3;
+
+    if(vmState.swinging){
+      vmState.swingT += dt;
+      const activePivot = slot===0?pivotSword: slot===1?pivotClaymore: slot===2?pivotSpear:null;
+      if(activePivot) applySwing(activePivot, vmState.swingT, vmState.swingDur);
+      if(vmState.swingT>=vmState.swingDur){
+        vmState.swinging=false;
+        [pivotSword,pivotClaymore,pivotSpear].forEach(p=>{const b=p.userData.base; p.position.set(b.x,b.y,b.z); p.rotation.set(b.rx,b.ry,b.rz);});
+      }
+    }
+    const wantBlock = (player.blocking && slot===0) ? 1 : 0;
+    vmState.blockAmt += (wantBlock - vmState.blockAmt) * Math.min(1, dt*10);
+    applyBlock(pivotShield, vmState.blockAmt);
+
+    if(slot===3){
+      const frac = player.charging ? Math.min(player.chargeT,1.4)/1.4 : 0;
+      applyBowDraw(pivotBow, frac);
+    }
+  }
+
+  if(vmMagic.visible){
+    const rt = RT_SPELLS[player.rtSpellIndex], lt = LT_SPELLS[player.ltSpellIndex];
+    glowR.userData.core.material.color.setHex(rt.color);
+    glowR.userData.halo.material.color.setHex(rt.color);
+    glowL.userData.core.material.color.setHex(lt.color);
+    glowL.userData.halo.material.color.setHex(lt.color);
+    glowLightR.color.setHex(rt.color);
+    glowLightL.color.setHex(lt.color);
+
+    vmState.castFlashR = Math.max(0, vmState.castFlashR - dt*3);
+    vmState.castFlashL = Math.max(0, vmState.castFlashL - dt*3);
+
+    let sR, thrustR;
+    if(player.charging){
+      const frac = Math.min(player.chargeT,1.4)/1.4;
+      sR = 1+frac*1.2;
+      thrustR = 0;
+      glowR.userData.core.material.opacity = 0.85+0.15*Math.sin(performance.now()*0.02);
+    } else {
+      sR = 1+vmState.castFlashR*1.6;
+      thrustR = vmState.castFlashR*0.1;
+      glowR.userData.core.material.opacity = 0.95;
+    }
+    glowR.scale.setScalar(sR);
+    glowLightR.intensity = 0.5 + (sR-1)*0.6;
+
+    const sL = 1+vmState.castFlashL*1.6;
+    glowL.scale.setScalar(sL);
+    glowLightL.intensity = 0.5 + (sL-1)*0.6;
+
+    const bR = handR.userData.base;
+    handR.position.set(bR.x, bR.y, bR.z - thrustR);
+    const bL = handL.userData.base;
+    handL.position.set(bL.x, bL.y, bL.z - vmState.castFlashL*0.08);
+  } else {
+    glowLightR.intensity = 0; glowLightL.intensity = 0;
+  }
+}
+// =============== END VIEWMODEL ===============
 
 const DEFAULT_KEY_BINDINGS = {
   moveForward:'KeyW', moveBack:'KeyS', moveLeft:'KeyA', moveRight:'KeyD',
@@ -736,7 +950,6 @@ function openSettings(from){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('startOverlay').classList.add('hidden');
-  document.getElementById('lobbyOverlay').classList.add('hidden');
   document.getElementById('settingsOverlay').classList.remove('hidden');
   buildSettingsUI();
   buildModeButtons();
@@ -747,7 +960,6 @@ function closeSettings(){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('settingsOverlay').classList.add('hidden');
   if(settingsReturnTo==='pause') document.getElementById('pauseOverlay').classList.remove('hidden');
-  else if (settingsReturnTo==='lobby') document.getElementById('lobbyOverlay').classList.remove('hidden');
   else document.getElementById('startOverlay').classList.remove('hidden');
 }
 
@@ -761,7 +973,7 @@ addEventListener('keydown', e=>{
     return;
   }
   keys[e.code]=true;
-  if(!gameStarted && !settingsOpen && e.code==='Enter'){ enterArena(false, false); return; }
+  if(!gameStarted && !settingsOpen && e.code==='Enter'){ enterArena(false); return; }
   handleKeyAction(e.code);
 });
 addEventListener('keyup', e=>{ keys[e.code]=false; });
@@ -805,16 +1017,11 @@ function toggleDebug(){
 }
 
 let gp = null;
-let gp2 = null; // Second gamepad for splitscreen
 let prevButtons = [];
 function pollGamepad(){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   gp = null;
-  gp2 = null;
-  for(const p of pads){ 
-      if(p && !gp) gp = p; 
-      else if(p && gp) gp2 = p;
-  }
+  for(const p of pads){ if(p){ gp=p; break; } }
 }
 function gpButtonPressed(i){
   if(!gp) return false;
@@ -1047,6 +1254,7 @@ function getForward(){
   return dir;
 }
 
+const state = { wave:0, enemiesRemaining:0, betweenWaves:true, score:0, precisionMultiplier:1 };
 let gameStarted = false, paused = false;
 let bestWave = parseInt(localStorage.getItem('tf_bestwave')||'0',10);
 let bestScore = parseInt(localStorage.getItem('tf_bestscore')||'0',10);
@@ -1386,9 +1594,9 @@ function doPrimary(){
       if(a) a.mag -= 1;
     }
     player.cooldowns.primary = w.rate;
-    if(w.pellets){ for(let i=0;i<w.pellets;i++) hitscanShoot(w.dmg, w.spread); }
-    else if(w.dual){ hitscanShoot(w.dmg, 0.04); }
-    else hitscanShoot(w.dmg, 0);
+    if(w.pellets){ for(let i=0;i<w.pellets;i++) hitscanShoot(w.dmg, w.spread); triggerGunRecoil('shotgun', 1.3); }
+    else if(w.dual){ hitscanShoot(w.dmg, 0.04); triggerGunRecoil('pistolR', 1); }
+    else { hitscanShoot(w.dmg, 0); triggerGunRecoil(w.name==='Sniper' ? 'sniper' : 'rifle', w.name==='Sniper' ? 1.6 : 1); }
     flashScreen('255,220,150', 0.08);
     applyPrecisionDecay();
   } else if(player.style === 'melee'){
@@ -1409,6 +1617,7 @@ function doPrimary(){
         }
       }
       flashScreen('255,255,255', 0.06);
+      triggerSwing();
     }
   } else if(player.style === 'magic'){
     const spell = RT_SPELLS[player.rtSpellIndex];
@@ -1432,6 +1641,7 @@ function releasePrimary(){
     if(player.rtSpellIndex===0) fireFireballCharged(frac);
     else if(player.rtSpellIndex===1) fireIceSpikeCharged(frac);
     else fireLightningCharged(frac);
+    vmState.castFlashR = 1;
     applyPrecisionDecay();
     player.charging = false; player.chargeT = 0;
     player.cooldowns.primary = 0.5;
@@ -1441,6 +1651,7 @@ function castLTSpell(){
   const spell = LT_SPELLS[player.ltSpellIndex];
   if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
   if(player.cooldowns.secondary > 0) return;
+  vmState.castFlashL = 1;
   if(player.ltSpellIndex===0){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
     firePoisonBolt();
@@ -1503,6 +1714,7 @@ function doSecondaryPress(){
         }
         player.cooldowns.secondary = w.rate;
         hitscanShoot(w.dmg, 0.04);
+        triggerGunRecoil('pistolL', 1);
         flashScreen('255,220,150', 0.08);
         applyPrecisionDecay();
       }
@@ -1572,58 +1784,6 @@ function updateMovement(dt){
   camera.rotation.order = 'YXZ';
   camera.rotation.y = player.yaw;
   camera.rotation.x = player.pitch;
-
-  p1Mesh.position.copy(player.pos);
-  p1Mesh.rotation.y = player.yaw;
-}
-
-// Minimal movement update for Player 2
-function updateMovementP2(dt) {
-    if(!player2.alive) return;
-    let mx=0, my=0;
-    
-    // Numpad / Arrow keys fallback for testing without gamepad 2
-    if(keys['ArrowUp']) my -= 1;
-    if(keys['ArrowDown']) my += 1;
-    if(keys['ArrowLeft']) mx -= 1;
-    if(keys['ArrowRight']) mx += 1;
-
-    // Gamepad 2 support
-    if(gp2){
-      const lx = gp2.axes[0]||0, ly = gp2.axes[1]||0;
-      if(Math.abs(lx)>0.15) mx += lx;
-      if(Math.abs(ly)>0.15) my += ly;
-      const rx = gp2.axes[2]||0, ry = gp2.axes[3]||0;
-      if(Math.abs(rx)>0.12) player2.yaw -= rx * 2.4 * dt * lookSensitivity;
-      if(Math.abs(ry)>0.12) player2.pitch -= ry * 2.0 * dt * lookSensitivity;
-      player2.pitch = Math.max(-1.3, Math.min(1.3, player2.pitch));
-    }
-
-    const len = Math.hypot(mx,my);
-    if(len>1){ mx/=len; my/=len; }
-    
-    const speed = 5.2; // Base speed for P2
-    const fwd = new THREE.Vector3(-Math.sin(player2.yaw), 0, -Math.cos(player2.yaw));
-    const right = new THREE.Vector3(Math.cos(player2.yaw), 0, -Math.sin(player2.yaw));
-    const mv = new THREE.Vector3(0,0,0);
-    mv.addScaledVector(fwd, -my);
-    mv.addScaledVector(right, mx);
-    if(mv.lengthSq()>0) mv.normalize();
-    const next = player2.pos.clone().addScaledVector(mv, speed*dt);
-  
-    resolveWallCollision(next, 0.5);
-    const half = ARENA_HALF-1;
-    next.x = Math.max(-half, Math.min(half, next.x));
-    next.z = Math.max(-half, Math.min(half, next.z));
-    player2.pos.x = next.x; player2.pos.z = next.z;
-  
-    camera2.position.copy(player2.pos);
-    camera2.rotation.order = 'YXZ';
-    camera2.rotation.y = player2.yaw;
-    camera2.rotation.x = player2.pitch;
-
-    p2Mesh.position.copy(player2.pos);
-    p2Mesh.rotation.y = player2.yaw;
 }
 
 function updateEnemies(dt){
@@ -1640,20 +1800,7 @@ function updateEnemies(dt){
     const disabled = e.frozenTimer>0 || e.stunTimer>0;
     if(!disabled){
       const spd = e.speed * (e.slowTimer>0 ? e.slowFactor : 1);
-      
-      // Target finding: find closest player
-      let targetPos = player.pos.clone();
-      let isTargetingP2 = false;
-      if (state.isSplitscreen && player2.alive) {
-          const d1 = e.mesh.position.distanceTo(player.pos);
-          const d2 = e.mesh.position.distanceTo(player2.pos);
-          if (d2 < d1) {
-              targetPos = player2.pos.clone();
-              isTargetingP2 = true;
-          }
-      }
-      
-      const toPlayer = targetPos.setY(0).sub(e.mesh.position.clone().setY(0));
+      const toPlayer = player.pos.clone().setY(0).sub(e.mesh.position.clone().setY(0));
       const dist = toPlayer.length();
       e.attackCd -= dt;
       if(e.ranged){
@@ -1663,19 +1810,15 @@ function updateEnemies(dt){
       } else {
         if(dist > 1.3){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
         else if(e.attackCd<=0){
-            if (!isTargetingP2) {
-                if(player.shieldTimer > 0){
-                    flashScreen('120,220,255',0.15);
-                } else {
-                    let dmg = 9;
-                    if(player.blocking) dmg *= 0.3;
-                    player.hp -= dmg;
-                    flashScreen('255,40,40',0.22);
-                }
-            } else {
-                player2.hp -= 9; // Basic P2 damage
-            }
-            e.attackCd = 0.9;
+          if(player.shieldTimer > 0){
+            flashScreen('120,220,255',0.15);
+          } else {
+            let dmg = 9;
+            if(player.blocking) dmg *= 0.3;
+            player.hp -= dmg;
+            flashScreen('255,40,40',0.22);
+          }
+          e.attackCd = 0.9;
         }
       }
       resolveWallCollision(e.mesh.position, 0.6);
@@ -1721,9 +1864,6 @@ function updateProjectiles(dt){
           flashScreen('180,60,255',0.2);
         }
         remove = true;
-      } else if (state.isSplitscreen && player2.alive && p.mesh.position.distanceTo(player2.pos) < 1.0) {
-          player2.hp -= p.dmg;
-          remove = true;
       }
     }
     if(remove){ scene.remove(p.mesh); projectiles.splice(i,1); }
@@ -1786,12 +1926,7 @@ function updateDebugPanel(){
   const pressed = [];
   for(let i=0;i<gp.buttons.length;i++){ if(gp.buttons[i].pressed) pressed.push(i); }
   const axes = gp.axes.map(a=>a.toFixed(2)).join(', ');
-  el.innerHTML = `<b>Gamepad 1 debug (P)</b><br>id: ${gp.id.slice(0,40)}<br>buttons: [${pressed.join(', ')}]<br>axes: [${axes}]`;
-  if(gp2) {
-      const p2 = [];
-      for(let i=0;i<gp2.buttons.length;i++){ if(gp2.buttons[i].pressed) p2.push(i); }
-      el.innerHTML += `<br><br><b>Gamepad 2 active</b><br>buttons: [${p2.join(', ')}]`;
-  }
+  el.innerHTML = `<b>Gamepad debug (P to hide)</b><br>id: ${gp.id.slice(0,40)}<br>buttons pressed: [${pressed.join(', ')}]<br>axes: [${axes}]`;
 }
 
 function updateResources(dt){
@@ -1824,11 +1959,6 @@ function startWave(){
     const half = ARENA_HALF-1;
     player.pos.x = Math.max(-half, Math.min(half, player.pos.x));
     player.pos.z = Math.max(-half, Math.min(half, player.pos.z));
-    if(state.isSplitscreen) {
-        resolveWallCollision(player2.pos, 0.6);
-        player2.pos.x = Math.max(-half, Math.min(half, player2.pos.x));
-        player2.pos.z = Math.max(-half, Math.min(half, player2.pos.z));
-    }
     drawRadarBackground();
   }
   spawnWaveEnemies();
@@ -1881,14 +2011,14 @@ function frame(now){
       }
     }
     prevButtons = gp ? gp.buttons.map(b=>b.pressed) : [];
-    renderer.render(scene, camera); // Basic render when paused
+    renderer.render(scene, camera);
     return;
   }
 
   if(gpButtonPressed(gpBindings.debug)) toggleDebug();
 
   if(!gameStarted && gpButtonPressed(0)){
-    enterArena(false, false);
+    enterArena(false);
   }
 
   if(gameStarted && !paused && player.alive){
@@ -1920,11 +2050,7 @@ function frame(now){
     primaryHeldPrev = primaryHeld; secondaryHeldPrev = secondaryHeld;
 
     updateMovement(dt);
-    if (state.isSplitscreen) {
-        updateMovementP2(dt);
-        if (player2.hp <= 0) player2.alive = false;
-    }
-
+    updateViewmodel(dt);
     updateEnemies(dt);
     updateProjectiles(dt);
     updateEffects(dt);
@@ -1941,71 +2067,32 @@ function frame(now){
 
   updateHud();
   if(gameStarted) drawRadar();
-  
-  // ==========================================
-  // SPLITSCREEN RENDERING LOGIC
-  // ==========================================
-  if (state.isSplitscreen) {
-      renderer.setScissorTest(true);
-      
-      // LEFT SCREEN (Player 1)
-      renderer.setScissor(0, 0, innerWidth / 2, innerHeight);
-      renderer.setViewport(0, 0, innerWidth / 2, innerHeight);
-      renderer.render(scene, camera);
-      
-      // RIGHT SCREEN (Player 2)
-      renderer.setScissor(innerWidth / 2, 0, innerWidth / 2, innerHeight);
-      renderer.setViewport(innerWidth / 2, 0, innerWidth / 2, innerHeight);
-      renderer.render(scene, camera2);
-      
-      renderer.setScissorTest(false);
-  } else {
-      // Standard Single Player Rendering
-      renderer.setViewport(0, 0, innerWidth, innerHeight);
-      renderer.render(scene, camera);
-  }
+  renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
 
-window.enterArena = function(useTouch, isSplitscreen){
+function enterArena(useTouch){
   if(gameStarted) return;
-  state.isSplitscreen = isSplitscreen;
-  resize(); // Trigger aspect ratio updates
   setTouchControls(useTouch);
   document.getElementById('startOverlay').classList.add('hidden');
-  document.getElementById('lobbyOverlay').classList.add('hidden');
   gameStarted = true;
   updateHudStyle();
   startWave();
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
-
 document.getElementById('startBtn').addEventListener('touchend', e=>{
-  e.preventDefault(); window.enterArena(true, false);
+  e.preventDefault();
+  enterArena(true);
 }, {passive:false});
-document.getElementById('startBtn').addEventListener('click', ()=>{ window.enterArena(false, false); });
-
-document.getElementById('localSplitBtn').addEventListener('click', ()=>{ window.enterArena(false, true); });
-
-document.getElementById('onlineLobbyBtn').addEventListener('click', ()=>{
-    document.getElementById('startOverlay').classList.add('hidden');
-    document.getElementById('lobbyOverlay').classList.remove('hidden');
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  enterArena(false);
 });
-
-document.getElementById('btnLobbyBack').addEventListener('click', ()=>{
-    document.getElementById('lobbyOverlay').classList.add('hidden');
-    document.getElementById('startOverlay').classList.remove('hidden');
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  location.reload();
 });
-document.getElementById('btnLeaveLobby').addEventListener('click', ()=>{
-    document.getElementById('activeLobbyPanel').classList.add('hidden');
-    document.getElementById('nameEntryPanel').classList.remove('hidden');
-    document.getElementById('lobbyOverlay').classList.add('hidden');
-    document.getElementById('startOverlay').classList.remove('hidden');
-    if (window.leaveFirebaseLobby) window.leaveFirebaseLobby();
+document.getElementById('resumeBtn').addEventListener('click', ()=>{
+  togglePause();
 });
-
-document.getElementById('retryBtn').addEventListener('click', ()=>{ location.reload(); });
-document.getElementById('resumeBtn').addEventListener('click', ()=>{ togglePause(); });
 document.getElementById('startSettingsBtn').addEventListener('click', ()=>openSettings('start'));
 document.getElementById('pauseSettingsBtn').addEventListener('click', ()=>openSettings('pause'));
 document.getElementById('settingsBackBtn').addEventListener('click', closeSettings);
@@ -2029,148 +2116,6 @@ document.getElementById('sensValueLabel').textContent = lookSensitivity.toFixed(
 sensSlider.addEventListener('input', ()=>{ setLookSensitivity(parseFloat(sensSlider.value)); });
 
 };
-</script>
-
-<!-- Firebase Multiplayer Logic -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'wavefighters-multi';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "mock", projectId: "mock" };
-    
-    let app, auth, db, currentUser = null, myPlayerName = "", heartbeatInterval = null;
-    let onlinePlayers = [], incomingRequests = [], currentlyShowingToastFor = null;
-
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => { currentUser = user; });
-    } catch(e) { console.error("Firebase init failed (Local test mode): ", e); }
-
-    const getPlayersCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'players');
-    const getRequestsCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'requests');
-
-    window.joinFirebaseLobby = async function(name) {
-        if (!currentUser || !db) return alert("Multiplayer server offline.");
-        myPlayerName = name;
-        
-        document.getElementById('nameEntryPanel').classList.add('hidden');
-        document.getElementById('activeLobbyPanel').classList.remove('hidden');
-
-        const myDocRef = doc(getPlayersCol(), currentUser.uid);
-        await setDoc(myDocRef, { name: myPlayerName, uid: currentUser.uid, status: 'in-lobby', lastActive: Date.now() });
-
-        heartbeatInterval = setInterval(() => {
-            setDoc(myDocRef, { lastActive: Date.now() }, { merge: true });
-        }, 5000);
-
-        onSnapshot(getPlayersCol(), (snapshot) => {
-            const now = Date.now();
-            onlinePlayers = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (now - data.lastActive < 15000 && data.uid !== currentUser.uid) {
-                    onlinePlayers.push(data);
-                }
-            });
-            renderPlayerList();
-        }, (err) => console.error(err));
-
-        onSnapshot(getRequestsCol(), (snapshot) => {
-            incomingRequests = [];
-            snapshot.forEach(doc => {
-                const req = doc.data(); req.id = doc.id;
-                if (req.toUid === currentUser.uid && req.status === 'pending') incomingRequests.push(req);
-                if (req.fromUid === currentUser.uid && req.status === 'accepted') {
-                    alert(`${req.toName} accepted! Starting splitscreen mock.`);
-                    deleteDoc(doc.ref);
-                    window.enterArena(false, true); // Mock transition
-                }
-            });
-            handleIncomingRequests();
-        }, (err) => console.error(err));
-    };
-
-    window.leaveFirebaseLobby = function() {
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        if (currentUser && db) deleteDoc(doc(getPlayersCol(), currentUser.uid));
-    };
-
-    window.sendJoinRequest = async function(targetUid, targetName) {
-        if (!currentUser) return;
-        const reqRef = doc(getRequestsCol(), `${currentUser.uid}_${targetUid}`);
-        await setDoc(reqRef, { fromUid: currentUser.uid, fromName: myPlayerName, toUid: targetUid, toName: targetName, status: 'pending', timestamp: Date.now() });
-        alert(`Request sent to ${targetName}.`);
-    };
-
-    window.acceptRequest = async function(requestId, fromName) {
-        if (!currentUser) return;
-        await updateDoc(doc(getRequestsCol(), requestId), { status: 'accepted' });
-        document.getElementById('pauseOverlay').classList.add('hidden');
-        window.enterArena(false, true); // Mock starting splitscreen
-    };
-    
-    window.rejectRequest = async function(requestId) {
-        if (!currentUser) return;
-        await deleteDoc(doc(getRequestsCol(), requestId));
-    };
-
-    function renderPlayerList() {
-        const listEl = document.getElementById('playerList');
-        if (onlinePlayers.length === 0) { listEl.innerHTML = `<div style="color:#888; text-align:center;">No other pilots online.</div>`; return; }
-        listEl.innerHTML = onlinePlayers.map(p => `
-            <div class="player-list-item">
-                <div><span style="font-weight:bold; color:white;">${p.name}</span> <span style="font-size:10px; color:#3bff8a;">● ${p.status}</span></div>
-                <button onclick="window.sendJoinRequest('${p.uid}', '${p.name}')" class="bindBtn" style="background: rgba(59,138,255,0.5)">Join</button>
-            </div>
-        `).join('');
-    }
-
-    function handleIncomingRequests() {
-        const toastEl = document.getElementById('notification-toast');
-        const containerEl = document.getElementById('pending-requests-container');
-        if (incomingRequests.length > 0) {
-            const req = incomingRequests[0];
-            if (currentlyShowingToastFor !== req.id) {
-                document.getElementById('toast-desc').innerText = `${req.fromName} wants to join! Press ESC/Pause to manage.`;
-                toastEl.classList.add('show');
-                currentlyShowingToastFor = req.id;
-                setTimeout(() => { toastEl.classList.remove('show'); currentlyShowingToastFor = null; }, 8000);
-            }
-            containerEl.classList.remove('hidden');
-            document.getElementById('requests-list').innerHTML = incomingRequests.map(r => `
-                <div style="background:rgba(255,255,255,0.1); padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>${r.fromName}</span>
-                    <div>
-                        <button onclick="window.acceptRequest('${r.id}', '${r.fromName}')" class="bindBtn" style="background:#3bff8a; color:black;">Accept</button>
-                        <button onclick="window.rejectRequest('${r.id}')" class="bindBtn" style="background:#ff3b3b;">Reject</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            toastEl.classList.remove('show');
-            currentlyShowingToastFor = null;
-            containerEl.classList.add('hidden');
-        }
-    }
-
-    document.getElementById('btnLogin').addEventListener('click', () => {
-        const name = document.getElementById('playerNameInput').value.trim();
-        if (name) window.joinFirebaseLobby(name); else alert("Enter a pilot name!");
-    });
 </script>
 
 <script>
