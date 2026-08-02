@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TRIFORM: Wave Arena - Multiplayer</title>
+<title>TRIFORM: Wave Arena</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Segoe UI',Arial,sans-serif;user-select:none;-webkit-user-select:none;}
   #c{display:block;width:100vw;height:100vh;}
@@ -46,23 +46,6 @@
   
   button.big{background:linear-gradient(135deg,#ff8a3b,#ff3b6b);border:none;color:#fff;font-size:16px;font-weight:700;letter-spacing:2px;padding:12px 36px;border-radius:24px;cursor:pointer;box-shadow:0 4px 20px rgba(255,80,80,.4);}
   button.big:active{transform:scale(.96);}
-  
-  /* Multiplayer Hub Specific Styles */
-  button.blue-btn { background:linear-gradient(135deg,#3b8aff,#3bd0ff); box-shadow:0 4px 20px rgba(59,138,255,.4); margin: 0 10px; }
-  button.green-btn { background:linear-gradient(135deg,#3bff8a,#3bffd8); box-shadow:0 4px 20px rgba(59,255,138,.4); margin: 0 10px; color:#000; }
-  
-  .lobby-panel { background: rgba(20,25,35,0.95); padding: 2rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 500px; text-align: left;}
-  .lobby-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; margin-bottom: 16px; font-size: 16px; }
-  .player-list-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; margin-bottom: 8px;}
-  
-  #notification-toast {
-      position: absolute; top: 20px; right: -400px; background: rgba(49, 130, 206, 0.95); padding: 15px 25px;
-      border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 50;
-      transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      display: flex; align-items: center; gap: 15px; border-left: 4px solid #90cdf4; color: white; pointer-events:none;
-  }
-  #notification-toast.show { right: 20px; }
-  
   #statLine{margin-top:12px;font-size:13px;opacity:.8;}
   .hidden{display:none !important;}
   #stateTag{font-size:11px;font-weight:700;letter-spacing:1px;margin-top:4px;padding:2px 8px;border-radius:6px;display:inline-block;}
@@ -84,6 +67,18 @@
   .bindBtn.listening{background:rgba(255,180,60,.45);border-color:#ffb43c;color:#fff;}
   .modeBtn.active,.touchModeBtn.active{background:rgba(102,217,255,.35);border-color:#66d9ff;color:#fff;}
   
+  /* Shop Overlay Styling */
+  #shopGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:860px;width:100%;margin:12px 0;max-height:55vh;overflow-y:auto;padding-right:6px;}
+  .shopCat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;text-align:left;}
+  .shopCat h3{margin:0 0 8px;font-size:13px;letter-spacing:1px;color:#ffb43c;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:4px;}
+  .shopItem{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;}
+  .shopItem span{display:block;}
+  .itemTitle{font-weight:700;}
+  .itemSub{font-size:10px;opacity:.65;}
+  .shopBuyBtn{background:linear-gradient(135deg,#3ba7ff,#3bffd8);border:none;color:#000;font-weight:700;padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;}
+  .shopBuyBtn.bought{background:rgba(255,255,255,.15);color:#aaa;cursor:default;}
+  .shopBuyBtn.cant{background:rgba(255,255,255,.08);color:#666;cursor:not-allowed;}
+
   /* Touch Controls Styles & Dynamic Layouts */
   #touchControls{position:fixed;inset:0;z-index:10;display:none;pointer-events:none;}
   #touchControls.enabled{display:block;}
@@ -96,35 +91,72 @@
   .touchBtn:active{background:rgba(255,255,255,.35);}
   #tPause{position:absolute;left:16px;top:16px;width:38px;height:38px;font-size:10px;}
 
+  /* Main Action Cluster */
   #touchMainButtons{position:absolute;display:flex;gap:10px;align-items:flex-end;pointer-events:auto;}
   .mainBtnCol{display:flex;flex-direction:column;gap:8px;align-items:center;}
   #tFire{width:72px;height:72px;font-size:13px;background:rgba(255,100,60,.35);border-color:rgba(255,140,100,.6);}
   #tAlt{width:54px;height:54px;font-size:10px;background:rgba(60,140,255,.35);border-color:rgba(100,170,255,.6);}
   #tJump,#tSprint{width:44px;height:44px;font-size:9.5px;}
 
+  /* Sub Action / Switcher Controls */
   #touchActionGrid{position:absolute;display:flex;gap:6px;pointer-events:auto;}
   #touchActionGrid .touchBtn{width:42px;height:36px;font-size:9.5px;border-radius:8px;background:rgba(255,255,255,.12);}
 
+  /* Landscape Layout */
   @media (orientation: landscape) {
     #radar{width:110px;height:110px;}
     .bar-wrap{left:16px;bottom:16px;width:200px;}
     #styleBox{right:140px;top:16px;text-align:right;}
     #topCenter{left:50%;transform:translateX(-50%);text-align:center;top:12px;}
+    
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:20px;bottom:95px;width:110px;height:110px;}
     #touchJoystickKnob{left:32px;top:32px;width:46px;height:46px;}
+    
+    /* Shift main action cluster LEFT */
     #touchMainButtons{right:85px;bottom:20px;}
-    #touchActionGrid{ left:50%; bottom:16px; transform:translateX(-50%); flex-direction:row; justify-content:center; }
+    
+    #touchActionGrid{
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      flex-direction:row;
+      justify-content:center;
+    }
   }
 
+  /* Portrait Layout */
   @media (orientation: portrait) {
     #radar{width:90px;height:90px;top:10px;right:10px;}
     .bar-wrap{left:16px;bottom:16px;width:180px;}
     #styleBox{right:110px;top:12px;text-align:right;}
-    #topCenter{ left:64px; top:12px; transform:none; text-align:left; }
+    
+    /* Move wave/score text to the left side in portrait to prevent overlap with style text */
+    #topCenter{
+      left:64px;
+      top:12px;
+      transform:none;
+      text-align:left;
+    }
+    
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:16px;bottom:100px;width:105px;height:105px;}
     #touchJoystickKnob{left:30px;top:30px;width:44px;height:44px;}
+    
+    /* Main action buttons shifted left */
     #touchMainButtons{right:24px;bottom:24px;}
-    #touchActionGrid{ right:16px; bottom:230px; display:grid; grid-template-columns:repeat(4,42px); gap:6px; justify-end; }
+    
+    /* Raise style/weapon switcher grid UP higher so it doesn't crowd action buttons */
+    #touchActionGrid{
+      right:16px;
+      bottom:230px;
+      display:grid;
+      grid-template-columns:repeat(4,42px);
+      gap:6px;
+      justify-content:end;
+    }
+    #touchActionGrid .touchBtn:nth-child(1), #touchActionGrid .touchBtn:nth-child(2) { transform: translateY(0); }
+    #touchActionGrid .touchBtn:nth-child(3), #touchActionGrid .touchBtn:nth-child(4) { transform: translateY(0); }
   }
 </style>
 </head>
@@ -184,7 +216,6 @@
   </div>
 </div>
 
-<!-- Main Start Screen -->
 <div class="overlay" id="startOverlay">
   <h1>TRIFORM: WAVE ARENA</h1>
   <h2>fight endless waves in the maze &mdash; switch combat styles on the fly</h2>
@@ -199,52 +230,49 @@
     <div class="cgroup">
       <h3>STYLE &amp; SLOTS</h3>
       <div>Switch style: LB / RB or Q / E</div>
-      <div>D-pad Up/Down (R/F): cycle weapon or RT spell</div>
-      <div>D-pad Left/Right (arrows): cycle arrow element or LT spell</div>
-      <div>FPS: Rifle / Sniper / Shotgun / Dual Pistols</div>
+      <div>Cycle weapon / RT spell: D-pad Up/Down (R/F)</div>
+      <div>Cycle arrow / LT spell: D-pad Left/Right (arrows)</div>
+      <div>FPS: Pistols, Rifle, Shotgun, Flamethrower, Rocket Launcher</div>
+      <div>Melee: Short Sword, Bow, Spear, Claymore</div>
+      <div>RT spells: Fireball, Ice Spike, Lightning</div>
+      <div>LT spells: Air Burst, Poison Bolt, Teleport, Aegis Shield</div>
     </div>
     <div class="cgroup">
       <h3>ACTIONS</h3>
       <div>Primary: RT / Left Click (swing, shoot, charge fire/ice/lightning/bow)</div>
       <div>Secondary: LT / Right Click</div>
+      <div> &bull; FPS: toggles zoom (Pistols fire left gun with LT)</div>
+      <div> &bull; Sword+Shield: hold to block &nbsp;|&nbsp; Bow: toggles zoom</div>
+      <div> &bull; Magic: casts selected LT spell</div>
       <div>Unleash shout (Magic only): Y / T key</div>
       <div>Radar top-right shows enemies and walls</div>
     </div>
   </div>
-  <div style="display:flex; gap: 15px; margin-top: 15px;">
-      <button class="big" id="startBtn">PLAY SOLO</button>
-      <button class="big blue-btn" id="onlineLobbyBtn">ONLINE LOBBY</button>
-      <button class="big green-btn" id="localSplitBtn">LOCAL CO-OP</button>
-  </div>
+  <button class="big" id="startBtn">ENTER ARENA</button>
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
 </div>
 
-<!-- Multiplayer Name Entry & Lobby -->
-<div class="overlay hidden" id="lobbyOverlay">
-  <div class="lobby-panel" id="nameEntryPanel">
-      <h2 style="font-size: 24px; color:#3bd0ff; margin-bottom: 15px; margin-top:0;">Connect to Servers</h2>
-      <input type="text" id="playerNameInput" class="lobby-input" placeholder="Enter your pilot name..." maxlength="15">
-      <button id="btnLogin" class="big blue-btn" style="width: 100%; margin:0;">CONNECT</button>
-      <button id="btnLobbyBack" class="big" style="width: 100%; margin: 10px 0 0 0; background: #555;">BACK</button>
-  </div>
-
-  <div class="lobby-panel hidden" id="activeLobbyPanel">
-      <h2 style="font-size: 24px; color:#3bd0ff; margin-bottom: 15px; margin-top:0;">Online Pilots</h2>
-      <div id="playerList" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
-          <!-- Players injected here via Firebase -->
-          <div style="color: #888; text-align:center;">Scanning for signals...</div>
-      </div>
-      <button id="btnLeaveLobby" class="big" style="width: 100%; margin:0; background: #555;">LEAVE LOBBY</button>
-  </div>
-</div>
-
-<!-- Non-intrusive In-Game Notification -->
-<div id="notification-toast">
-    <div>
-        <div style="font-weight: bold; font-size: 16px;" id="toast-title">New Challenger!</div>
-        <div style="font-size: 13px; color: #bee3f8;" id="toast-desc">PilotX wants to join. Press ESC/Pause to manage.</div>
+<!-- SHOP / PROGRESSION OVERLAY -->
+<div class="overlay hidden" id="shopOverlay">
+  <h1 style="font-size:28px;">WAVE CLEAR!</h1>
+  <h2 style="margin-bottom:4px;">EARNED POINTS / UPGRADE ARSENAL</h2>
+  <div style="font-size:16px;font-weight:700;color:#ffb43c;" id="shopScoreDisplay">Points Available: 0</div>
+  <div id="shopGrid">
+    <div class="shopCat">
+      <h3>GUNS (FPS)</h3>
+      <div id="shopFpsList"></div>
     </div>
+    <div class="shopCat">
+      <h3>MELEE &amp; BOWS</h3>
+      <div id="shopMeleeList"></div>
+    </div>
+    <div class="shopCat">
+      <h3>MAGIC SPELLS</h3>
+      <div id="shopMagicList"></div>
+    </div>
+  </div>
+  <button class="big" id="nextWaveBtn" style="margin-top:6px;">START NEXT WAVE</button>
 </div>
 
 <div class="overlay hidden" id="deathOverlay">
@@ -255,14 +283,6 @@
 
 <div class="overlay hidden" id="pauseOverlay">
   <h1 style="font-size:32px;">PAUSED</h1>
-  
-  <div id="pending-requests-container" class="hidden" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 100%; max-width: 400px; text-align:left;">
-      <h3 style="color: #ffb43c; margin: 0 0 10px 0; font-size: 14px;">Incoming Join Requests</h3>
-      <div id="requests-list" style="display:flex; flex-direction:column; gap:8px;">
-          <!-- Requests injected here -->
-      </div>
-  </div>
-
   <button class="big" id="resumeBtn">RESUME</button>
   <button class="big" id="pauseSettingsBtn" style="margin-top:12px;background:linear-gradient(135deg,#3b8aff,#3bd0ff);">SETTINGS</button>
 </div>
@@ -301,7 +321,7 @@
       <div id="gpBindList"></div>
     </div>
   </div>
-  <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;justify-center;">
+  <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
     <button class="big" id="resetBindsBtn" style="background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 20px;">RESET DEFAULTS</button>
     <button class="big" id="settingsBackBtn" style="font-size:13px;padding:8px 20px;">BACK</button>
   </div>
@@ -321,40 +341,18 @@ const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
-// Enable scissor test for Splitscreen
-renderer.setScissorTest(false); 
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1220);
 scene.fog = new THREE.Fog(0x0b1220, 22, 85);
 
-// Camera 1 (Player 1)
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 300);
-// Camera 2 (Player 2 Splitscreen)
-const camera2 = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 300);
 const baseFOV = 75;
-
-// ==========================================
-// STATE DECLARED HERE BEFORE RESIZE IS CALLED
-// ==========================================
-const state = { wave:0, enemiesRemaining:0, betweenWaves:true, score:0, precisionMultiplier:1, isSplitscreen: false };
-
-// Layer magic to hide P1 body from P1 camera, but P2 can see P1
-camera.layers.enable(0);
-camera.layers.enable(2); // Can see Player 2 layer
-camera2.layers.enable(0);
-camera2.layers.enable(1); // Can see Player 1 layer
 
 function resize(){
   renderer.setSize(innerWidth, innerHeight);
-  if(state.isSplitscreen) {
-      camera.aspect = (innerWidth/2)/innerHeight;
-      camera2.aspect = (innerWidth/2)/innerHeight;
-  } else {
-      camera.aspect = innerWidth/innerHeight;
-  }
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  camera2.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
 resize();
@@ -541,14 +539,6 @@ function drawRadar(){
   radarCtx.closePath();
   radarCtx.fillStyle = '#ffffff';
   radarCtx.fill();
-  
-  if(state.isSplitscreen && player2.alive) {
-      const pp2 = worldToRadar(player2.pos.x, player2.pos.z);
-      radarCtx.beginPath();
-      radarCtx.arc(pp2.rx, pp2.ry, 4, 0, Math.PI*2);
-      radarCtx.fillStyle = '#ff66b2';
-      radarCtx.fill();
-  }
 }
 
 function resolveWallCollision(pos, margin){
@@ -573,11 +563,6 @@ function isInsideWall(pos, margin){
   return false;
 }
 
-// ---------------------------------
-// PLAYER 1 & PLAYER 2 STATE
-// ---------------------------------
-const EYE_H = 1.7;
-
 const player = {
   pos: new THREE.Vector3(0,1.7,0),
   yaw: 0, pitch: 0,
@@ -594,55 +579,53 @@ const player = {
   cooldowns: {primary:0, secondary:0, shout:0},
   alive:true,
 };
-
-// Player 2 State
-const player2 = {
-  pos: new THREE.Vector3(2,1.7,2),
-  yaw: 0, pitch: 0,
-  vy: 0, grounded: true,
-  hp: 100, maxHp: 100,
-  alive: true
-};
-
-// Player Meshes (so they can see each other in splitscreen)
-const p1Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshStandardMaterial({color: 0x3bd0ff}));
-p1Mesh.layers.set(1); // Seen by Camera 2 (P2)
-scene.add(p1Mesh);
-
-const p2Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.8, 0.8), new THREE.MeshStandardMaterial({color: 0xff3b6b}));
-p2Mesh.layers.set(2); // Seen by Camera 1 (P1)
-scene.add(p2Mesh);
+const EYE_H = 1.7;
 
 const STYLES = ['fps','melee','magic'];
+
+/* WEAPON & SPELL DEFINITIONS WITH COST & UNLOCK PROGRESSION */
 const FPS_WEAPONS = [
-  {name:'Assault Rifle', dmg:8, rate:0.12, hitscan:true, zoomLevels:[75,55], magSize:30, reserveSize:90, reloadTime:1.4},
-  {name:'Sniper', dmg:48, rate:1.0, hitscan:true, zoomLevels:[75,46,22], magSize:5, reserveSize:20, reloadTime:1.8},
-  {name:'Shotgun', dmg:6, pellets:6, rate:1.1, hitscan:true, spread:0.12, zoomLevels:[75], magSize:6, reserveSize:24, reloadTime:1.6},
-  {name:'Dual Pistols', dmg:5, rate:0.16, hitscan:true, dual:true, magSize:12, reserveSize:48, reloadTime:1.2},
+  {id:'dual_pistols', name:'Dual Pistols', dmg:5, rate:0.16, hitscan:true, dual:true, magSize:16, reserveSize:64, reloadTime:1.0, cost:0, unlocked:true},
+  {id:'bolt_rifle', name:'Bolt Rifle (1x)', dmg:32, rate:0.7, hitscan:true, zoomLevels:[75,50], magSize:6, reserveSize:30, reloadTime:1.5, cost:80, unlocked:false},
+  {id:'shotgun', name:'Shotgun', dmg:6, pellets:6, rate:1.1, hitscan:true, spread:0.12, zoomLevels:[75], magSize:6, reserveSize:24, reloadTime:1.6, cost:150, unlocked:false},
+  {id:'assault_rifle', name:'Assault Rifle', dmg:8, rate:0.12, hitscan:true, zoomLevels:[75,55], magSize:30, reserveSize:90, reloadTime:1.4, cost:240, unlocked:false},
+  {id:'sniper', name:'Sniper Rifle', dmg:52, rate:1.1, hitscan:true, zoomLevels:[75,42,18], magSize:5, reserveSize:20, reloadTime:1.8, cost:350, unlocked:false},
+  {id:'flamethrower', name:'Flamethrower', dmg:2.5, rate:0.05, isFlame:true, range:12, magSize:50, reserveSize:150, reloadTime:2.0, cost:480, unlocked:false},
+  {id:'rocket_launcher', name:'Rocket Launcher', dmg:65, rate:1.4, isRocket:true, zoomLevels:[75,60], magSize:3, reserveSize:12, reloadTime:2.2, cost:650, unlocked:false},
 ];
+
 const MELEE_WEAPONS = [
-  {name:'Sword & Shield', dmg:26, range:3.2, angle:0.45, cd:0.5, canBlock:true},
-  {name:'Claymore', dmg:48, range:3.6, angle:0.4, cd:1.0, canBlock:false},
-  {name:'Spear', dmg:16, range:5.0, angle:0.75, cd:0.35, canBlock:false},
-  {name:'Bow', isBow:true, quiverSize:15},
+  {id:'short_sword', name:'Sword & Shield', dmg:24, range:3.2, angle:0.45, cd:0.45, canBlock:true, cost:0, unlocked:true},
+  {id:'bow', name:'Bow & Arrow', isBow:true, quiverSize:20, cost:0, unlocked:true},
+  {id:'spear', name:'Spear', dmg:18, range:5.0, angle:0.75, cd:0.35, canBlock:false, cost:120, unlocked:false},
+  {id:'claymore', name:'Claymore', dmg:50, range:3.6, angle:0.4, cd:1.0, canBlock:false, cost:280, unlocked:false},
 ];
+
 const ARROW_TYPES = [
-  {name:'Normal', color:0xffe08a},
-  {name:'Fire', color:0xff6a2b, dot:{dmg:4,time:3}},
-  {name:'Ice', color:0x8adfff, slow:{factor:0.5,time:2.5}},
-  {name:'Poison', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}},
+  {id:'arr_normal', name:'Normal', color:0xffe08a, cost:0, unlocked:true},
+  {id:'arr_fire', name:'Fire Arrow', color:0xff6a2b, dot:{dmg:4,time:3}, cost:100, unlocked:false},
+  {id:'arr_ice', name:'Ice Arrow', color:0x8adfff, slow:{factor:0.5,time:2.5}, cost:180, unlocked:false},
+  {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
+
 const RT_SPELLS = [
-  {name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b},
-  {name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4},
-  {name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65},
+  {id:'sp_fireball', name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b, cost:0, unlocked:true},
+  {id:'sp_ice', name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, cost:150, unlocked:false},
+  {id:'sp_lightning', name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65, cost:300, unlocked:false},
 ];
+
 const LT_SPELLS = [
-  {name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a},
-  {name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff},
-  {name:'Teleport', manaCost:20, cd:4, color:0xffffff},
-  {name:'Aegis Shield', manaCost:40, cd:22, duration:3, color:0x66d9ff},
+  {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
+  {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:3, color:0x66d9ff, cost:400, unlocked:false},
 ];
+
+function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
+function getUnlockedMelee(){ return MELEE_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
+function getUnlockedArrows(){ return ARROW_TYPES.filter(a=>a.unlocked || gameMode==='unlimited'); }
+function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
+function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
 
 const DEFAULT_KEY_BINDINGS = {
   moveForward:'KeyW', moveBack:'KeyS', moveLeft:'KeyA', moveRight:'KeyD',
@@ -736,7 +719,6 @@ function openSettings(from){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('pauseOverlay').classList.add('hidden');
   document.getElementById('startOverlay').classList.add('hidden');
-  document.getElementById('lobbyOverlay').classList.add('hidden');
   document.getElementById('settingsOverlay').classList.remove('hidden');
   buildSettingsUI();
   buildModeButtons();
@@ -747,7 +729,6 @@ function closeSettings(){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('settingsOverlay').classList.add('hidden');
   if(settingsReturnTo==='pause') document.getElementById('pauseOverlay').classList.remove('hidden');
-  else if (settingsReturnTo==='lobby') document.getElementById('lobbyOverlay').classList.remove('hidden');
   else document.getElementById('startOverlay').classList.remove('hidden');
 }
 
@@ -761,14 +742,14 @@ addEventListener('keydown', e=>{
     return;
   }
   keys[e.code]=true;
-  if(!gameStarted && !settingsOpen && e.code==='Enter'){ enterArena(false, false); return; }
+  if(!gameStarted && !settingsOpen && e.code==='Enter'){ enterArena(false); return; }
   handleKeyAction(e.code);
 });
 addEventListener('keyup', e=>{ keys[e.code]=false; });
 
 let pointerLocked = false;
 canvas.addEventListener('click', ()=>{
-  if(!gameStarted || touchControlsEnabled) return;
+  if(!gameStarted || touchControlsEnabled || !document.getElementById('shopOverlay').classList.contains('hidden')) return;
   if(document.pointerLockElement !== canvas) canvas.requestPointerLock();
 });
 document.addEventListener('pointerlockchange', ()=>{ pointerLocked = document.pointerLockElement === canvas; });
@@ -805,16 +786,11 @@ function toggleDebug(){
 }
 
 let gp = null;
-let gp2 = null; // Second gamepad for splitscreen
 let prevButtons = [];
 function pollGamepad(){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   gp = null;
-  gp2 = null;
-  for(const p of pads){ 
-      if(p && !gp) gp = p; 
-      else if(p && gp) gp2 = p;
-  }
+  for(const p of pads){ if(p){ gp=p; break; } }
 }
 function gpButtonPressed(i){
   if(!gp) return false;
@@ -892,7 +868,8 @@ function damageEnemy(e, dmg){
     scene.remove(e.mesh);
     state.enemiesRemaining--;
     const mult = gameMode==='precision' ? state.precisionMultiplier : 1;
-    state.score += Math.round(10 * mult);
+    const pts = Math.round(10 * mult);
+    state.score += pts;
   }
 }
 
@@ -918,13 +895,15 @@ function updateShieldVisual(dt){
 }
 const geoArrow = new THREE.ConeGeometry(0.06,0.6,6);
 const geoBall = new THREE.SphereGeometry(0.22,8,8);
+const geoRocket = new THREE.CylinderGeometry(0.1,0.1,0.5,8);
 const geoEnemyBolt = new THREE.SphereGeometry(0.18,8,8);
 const matEnemyBolt = new THREE.MeshBasicMaterial({color:0xc06aff});
 
 function spawnProjectile(opts){ scene.add(opts.mesh); projectiles.push(opts); }
 
 function fireArrow(damage){
-  const type = ARROW_TYPES[player.arrowTypeIndex];
+  const unlocked = getUnlockedArrows();
+  const type = unlocked[player.arrowTypeIndex] || unlocked[0];
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:type.color});
   const mesh = new THREE.Mesh(geoArrow, mat);
@@ -935,6 +914,29 @@ function fireArrow(damage){
       if(type.dot){ e.dotTimer=type.dot.time; e.dotDmg=type.dot.dmg; e.dotAcc=0; }
       if(type.slow){ e.slowTimer=type.slow.time; e.slowFactor=type.slow.factor; }
     }});
+}
+function fireRocket(){
+  const dir = getForward();
+  const mat = new THREE.MeshBasicMaterial({color:0xff4411});
+  const mesh = new THREE.Mesh(geoRocket, mat);
+  mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(32), dmg:65, friendly:true, life:3.5, splash:5.0});
+}
+function fireFlameStream(){
+  const dir = getForward();
+  raycaster.set(player.pos.clone(), dir);
+  raycaster.far = 12;
+  const targets = wallMeshes.concat(enemies.filter(e=>e.alive).map(e=>e.mesh));
+  const hits = raycaster.intersectObjects(targets, true);
+  if(hits.length){
+    const hitMesh = hits[0].object;
+    const e = enemies.find(en=>en.alive && (en.mesh===hitMesh.parent || en.mesh===hitMesh));
+    if(e){
+      damageEnemy(e, 2.5);
+      e.dotTimer = 2.0; e.dotDmg = 2; e.dotAcc = 0;
+    }
+  }
 }
 function fireFireballCharged(frac){
   const spell = RT_SPELLS[0];
@@ -962,7 +964,7 @@ function fireIceSpikeCharged(frac){
     }});
 }
 function firePoisonBolt(){
-  const spell = LT_SPELLS[0];
+  const spell = LT_SPELLS[1];
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
@@ -1047,6 +1049,7 @@ function getForward(){
   return dir;
 }
 
+const state = { wave:0, enemiesRemaining:0, betweenWaves:true, score:0, precisionMultiplier:1 };
 let gameStarted = false, paused = false;
 let bestWave = parseInt(localStorage.getItem('tf_bestwave')||'0',10);
 let bestScore = parseInt(localStorage.getItem('tf_bestscore')||'0',10);
@@ -1054,9 +1057,9 @@ document.getElementById('bestWave').textContent = bestWave;
 document.getElementById('bestScore').textContent = bestScore;
 
 const GAME_MODES = {
-  unlimited: 'Classic — infinite ammo and mana.',
-  ammo: 'Limited ammo, refilled each wave. Reload with the Reload action when empty.',
-  precision: 'Unlimited ammo, but firing repeatedly lowers a score precision multiplier.',
+  unlimited: 'Classic — infinite ammo and mana. Everything unlocked.',
+  ammo: 'Limited ammo, refilled each wave. Buy upgrades with points!',
+  precision: 'Unlimited ammo, but score multiplier decreases with fast firing.',
 };
 let gameMode = localStorage.getItem('tf_gamemode') || 'unlimited';
 const PRECISION_DECAY_PER_SHOT = 0.05;
@@ -1083,7 +1086,9 @@ function startReload(w){
 }
 function tryReload(){
   if(gameMode!=='ammo' || player.style!=='fps') return;
-  startReload(FPS_WEAPONS[player.fpsSlot]);
+  const unlocked = getUnlockedFPS();
+  const w = unlocked[player.fpsSlot];
+  if(w) startReload(w);
 }
 function updateAmmoState(dt){
   if(gameMode!=='ammo' || !player.reloading) return;
@@ -1147,7 +1152,9 @@ function buildTouchModeButtons(){
 function touchActionAllowed(){ return gameStarted && !paused && player.alive; }
 
 function updateTouchActionVisibility(){
-  const isBow = player.style==='melee' && MELEE_WEAPONS[player.meleeSlot] && MELEE_WEAPONS[player.meleeSlot].isBow;
+  const meleeUnlocked = getUnlockedMelee();
+  const curMelee = meleeUnlocked[player.meleeSlot];
+  const isBow = player.style==='melee' && curMelee && curMelee.isBow;
   const isMagic = player.style==='magic';
   const showSub = isBow || isMagic;
   const showReload = player.style==='fps' && gameMode==='ammo';
@@ -1271,28 +1278,38 @@ function cycleStyle(dir){
 }
 function cycleSlot(dir){
   if(player.style==='fps'){
-    player.fpsSlot = (player.fpsSlot + dir + FPS_WEAPONS.length) % FPS_WEAPONS.length;
+    const unlocked = getUnlockedFPS();
+    player.fpsSlot = (player.fpsSlot + dir + unlocked.length) % unlocked.length;
     player.fpsZoomIndex = 0; camera.fov = baseFOV; camera.updateProjectionMatrix();
   } else if(player.style==='melee'){
-    player.meleeSlot = (player.meleeSlot + dir + MELEE_WEAPONS.length) % MELEE_WEAPONS.length;
+    const unlocked = getUnlockedMelee();
+    player.meleeSlot = (player.meleeSlot + dir + unlocked.length) % unlocked.length;
     player.charging=false; player.chargeT=0;
     player.meleeZoomOn=false; camera.fov = baseFOV; camera.updateProjectionMatrix();
   } else if(player.style==='magic'){
-    player.rtSpellIndex = (player.rtSpellIndex + dir + RT_SPELLS.length) % RT_SPELLS.length;
+    const unlocked = getUnlockedRTSpells();
+    player.rtSpellIndex = (player.rtSpellIndex + dir + unlocked.length) % unlocked.length;
     player.charging=false; player.chargeT=0;
   }
   updateHudStyle();
 }
 function cycleSubSlot(dir){
-  if(player.style==='melee' && MELEE_WEAPONS[player.meleeSlot].isBow){
-    player.arrowTypeIndex = (player.arrowTypeIndex + dir + ARROW_TYPES.length) % ARROW_TYPES.length;
+  if(player.style==='melee'){
+    const unlockedMelee = getUnlockedMelee();
+    const curMelee = unlockedMelee[player.meleeSlot];
+    if(curMelee && curMelee.isBow){
+      const unlockedArr = getUnlockedArrows();
+      player.arrowTypeIndex = (player.arrowTypeIndex + dir + unlockedArr.length) % unlockedArr.length;
+    }
   } else if(player.style==='magic'){
-    player.ltSpellIndex = (player.ltSpellIndex + dir + LT_SPELLS.length) % LT_SPELLS.length;
+    const unlockedLT = getUnlockedLTSpells();
+    player.ltSpellIndex = (player.ltSpellIndex + dir + unlockedLT.length) % unlockedLT.length;
   }
   updateHudStyle();
 }
 function cycleZoom(){
-  const w = FPS_WEAPONS[player.fpsSlot];
+  const unlocked = getUnlockedFPS();
+  const w = unlocked[player.fpsSlot] || unlocked[0];
   const zooms = w.zoomLevels || [baseFOV];
   player.fpsZoomIndex = (player.fpsZoomIndex+1) % zooms.length;
   camera.fov = zooms[player.fpsZoomIndex];
@@ -1303,14 +1320,25 @@ function updateHudStyle(){
   document.getElementById('styleName').textContent = styleNames[player.style];
   let wname = '', sub = '';
   if(player.style==='fps'){
-    wname = FPS_WEAPONS[player.fpsSlot].name;
-  } else if(player.style==='melee'){
-    const w = MELEE_WEAPONS[player.meleeSlot];
+    const unlocked = getUnlockedFPS();
+    const w = unlocked[player.fpsSlot] || unlocked[0];
     wname = w.name;
-    if(w.isBow) sub = 'Arrow: ' + ARROW_TYPES[player.arrowTypeIndex].name;
+  } else if(player.style==='melee'){
+    const unlocked = getUnlockedMelee();
+    const w = unlocked[player.meleeSlot] || unlocked[0];
+    wname = w.name;
+    if(w.isBow){
+      const unlockedArr = getUnlockedArrows();
+      const arr = unlockedArr[player.arrowTypeIndex] || unlockedArr[0];
+      sub = 'Arrow: ' + arr.name;
+    }
   } else {
-    wname = 'RT: ' + RT_SPELLS[player.rtSpellIndex].name;
-    sub = 'LT: ' + LT_SPELLS[player.ltSpellIndex].name;
+    const unlockedRT = getUnlockedRTSpells();
+    const rt = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
+    const unlockedLT = getUnlockedLTSpells();
+    const lt = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
+    wname = 'RT: ' + rt.name;
+    sub = 'LT: ' + lt.name;
   }
   document.getElementById('weaponName').textContent = wname;
   document.getElementById('subLine').textContent = sub;
@@ -1375,7 +1403,8 @@ function hitscanShoot(dmg, spreadAmt){
 function doPrimary(){
   if(!player.alive || player.cooldowns.primary > 0) return;
   if(player.style === 'fps'){
-    const w = FPS_WEAPONS[player.fpsSlot];
+    const unlocked = getUnlockedFPS();
+    const w = unlocked[player.fpsSlot] || unlocked[0];
     if(gameMode==='ammo'){
       if(player.reloading && player.reloadingWeapon===w.name) return;
       const a = player.ammo[w.name];
@@ -1386,13 +1415,16 @@ function doPrimary(){
       if(a) a.mag -= 1;
     }
     player.cooldowns.primary = w.rate;
-    if(w.pellets){ for(let i=0;i<w.pellets;i++) hitscanShoot(w.dmg, w.spread); }
+    if(w.isRocket){ fireRocket(); }
+    else if(w.isFlame){ fireFlameStream(); }
+    else if(w.pellets){ for(let i=0;i<w.pellets;i++) hitscanShoot(w.dmg, w.spread); }
     else if(w.dual){ hitscanShoot(w.dmg, 0.04); }
     else hitscanShoot(w.dmg, 0);
     flashScreen('255,220,150', 0.08);
     applyPrecisionDecay();
   } else if(player.style === 'melee'){
-    const w = MELEE_WEAPONS[player.meleeSlot];
+    const unlocked = getUnlockedMelee();
+    const w = unlocked[player.meleeSlot] || unlocked[0];
     if(w.isBow){
       if(gameMode==='ammo' && player.arrows<=0){ showMsg('OUT OF ARROWS'); return; }
       player.charging = true;
@@ -1411,26 +1443,32 @@ function doPrimary(){
       flashScreen('255,255,255', 0.06);
     }
   } else if(player.style === 'magic'){
-    const spell = RT_SPELLS[player.rtSpellIndex];
+    const unlockedRT = getUnlockedRTSpells();
+    const spell = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
     player.charging = true;
   }
 }
 function releasePrimary(){
-  if(player.style==='melee' && MELEE_WEAPONS[player.meleeSlot].isBow && player.charging){
-    const charge = Math.min(player.chargeT, 1.4) / 1.4;
-    const dmg = 14 + charge*40;
-    fireArrow(dmg);
-    if(gameMode==='ammo') player.arrows = Math.max(0, player.arrows - 1);
-    applyPrecisionDecay();
-    player.charging = false; player.chargeT = 0;
-    player.cooldowns.primary = 0.25;
+  if(player.style==='melee'){
+    const unlockedMelee = getUnlockedMelee();
+    const w = unlockedMelee[player.meleeSlot] || unlockedMelee[0];
+    if(w.isBow && player.charging){
+      const charge = Math.min(player.chargeT, 1.4) / 1.4;
+      const dmg = 14 + charge*40;
+      fireArrow(dmg);
+      if(gameMode==='ammo') player.arrows = Math.max(0, player.arrows - 1);
+      applyPrecisionDecay();
+      player.charging = false; player.chargeT = 0;
+      player.cooldowns.primary = 0.25;
+    }
   } else if(player.style==='magic' && player.charging){
-    const spell = RT_SPELLS[player.rtSpellIndex];
+    const unlockedRT = getUnlockedRTSpells();
+    const spell = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     const frac = Math.min(player.chargeT, 1.4) / 1.4;
     player.mana -= spell.manaCost;
-    if(player.rtSpellIndex===0) fireFireballCharged(frac);
-    else if(player.rtSpellIndex===1) fireIceSpikeCharged(frac);
+    if(spell.id==='sp_fireball') fireFireballCharged(frac);
+    else if(spell.id==='sp_ice') fireIceSpikeCharged(frac);
     else fireLightningCharged(frac);
     applyPrecisionDecay();
     player.charging = false; player.chargeT = 0;
@@ -1438,14 +1476,11 @@ function releasePrimary(){
   }
 }
 function castLTSpell(){
-  const spell = LT_SPELLS[player.ltSpellIndex];
+  const unlockedLT = getUnlockedLTSpells();
+  const spell = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
   if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
   if(player.cooldowns.secondary > 0) return;
-  if(player.ltSpellIndex===0){
-    player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    firePoisonBolt();
-    applyPrecisionDecay();
-  } else if(player.ltSpellIndex===1){
+  if(spell.id==='sp_air'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
     spawnRing(0xffffff);
     flashScreen('220,220,255',0.15);
@@ -1461,10 +1496,14 @@ function castLTSpell(){
         resolveWallCollision(e.mesh.position, 0.6);
       }
     }
-  } else if(player.ltSpellIndex===2){
+  } else if(spell.id==='sp_poison'){
+    player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
+    firePoisonBolt();
+    applyPrecisionDecay();
+  } else if(spell.id==='sp_teleport'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
     doTeleport();
-  } else if(player.ltSpellIndex===3){
+  } else if(spell.id==='sp_aegis'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
     player.shieldTimer = spell.duration;
     showMsg('AEGIS SHIELD');
@@ -1489,7 +1528,8 @@ function doTeleport(){
 }
 function doSecondaryPress(){
   if(player.style === 'fps'){
-    const w = FPS_WEAPONS[player.fpsSlot];
+    const unlocked = getUnlockedFPS();
+    const w = unlocked[player.fpsSlot] || unlocked[0];
     if(w.dual){
       if(player.cooldowns.secondary <= 0){
         if(gameMode==='ammo'){
@@ -1510,7 +1550,8 @@ function doSecondaryPress(){
       cycleZoom();
     }
   } else if(player.style === 'melee'){
-    const w = MELEE_WEAPONS[player.meleeSlot];
+    const unlocked = getUnlockedMelee();
+    const w = unlocked[player.meleeSlot] || unlocked[0];
     if(w.canBlock){ player.blocking = true; }
     else if(w.isBow){
       player.meleeZoomOn = !player.meleeZoomOn;
@@ -1572,58 +1613,6 @@ function updateMovement(dt){
   camera.rotation.order = 'YXZ';
   camera.rotation.y = player.yaw;
   camera.rotation.x = player.pitch;
-
-  p1Mesh.position.copy(player.pos);
-  p1Mesh.rotation.y = player.yaw;
-}
-
-// Minimal movement update for Player 2
-function updateMovementP2(dt) {
-    if(!player2.alive) return;
-    let mx=0, my=0;
-    
-    // Numpad / Arrow keys fallback for testing without gamepad 2
-    if(keys['ArrowUp']) my -= 1;
-    if(keys['ArrowDown']) my += 1;
-    if(keys['ArrowLeft']) mx -= 1;
-    if(keys['ArrowRight']) mx += 1;
-
-    // Gamepad 2 support
-    if(gp2){
-      const lx = gp2.axes[0]||0, ly = gp2.axes[1]||0;
-      if(Math.abs(lx)>0.15) mx += lx;
-      if(Math.abs(ly)>0.15) my += ly;
-      const rx = gp2.axes[2]||0, ry = gp2.axes[3]||0;
-      if(Math.abs(rx)>0.12) player2.yaw -= rx * 2.4 * dt * lookSensitivity;
-      if(Math.abs(ry)>0.12) player2.pitch -= ry * 2.0 * dt * lookSensitivity;
-      player2.pitch = Math.max(-1.3, Math.min(1.3, player2.pitch));
-    }
-
-    const len = Math.hypot(mx,my);
-    if(len>1){ mx/=len; my/=len; }
-    
-    const speed = 5.2; // Base speed for P2
-    const fwd = new THREE.Vector3(-Math.sin(player2.yaw), 0, -Math.cos(player2.yaw));
-    const right = new THREE.Vector3(Math.cos(player2.yaw), 0, -Math.sin(player2.yaw));
-    const mv = new THREE.Vector3(0,0,0);
-    mv.addScaledVector(fwd, -my);
-    mv.addScaledVector(right, mx);
-    if(mv.lengthSq()>0) mv.normalize();
-    const next = player2.pos.clone().addScaledVector(mv, speed*dt);
-  
-    resolveWallCollision(next, 0.5);
-    const half = ARENA_HALF-1;
-    next.x = Math.max(-half, Math.min(half, next.x));
-    next.z = Math.max(-half, Math.min(half, next.z));
-    player2.pos.x = next.x; player2.pos.z = next.z;
-  
-    camera2.position.copy(player2.pos);
-    camera2.rotation.order = 'YXZ';
-    camera2.rotation.y = player2.yaw;
-    camera2.rotation.x = player2.pitch;
-
-    p2Mesh.position.copy(player2.pos);
-    p2Mesh.rotation.y = player2.yaw;
 }
 
 function updateEnemies(dt){
@@ -1640,20 +1629,7 @@ function updateEnemies(dt){
     const disabled = e.frozenTimer>0 || e.stunTimer>0;
     if(!disabled){
       const spd = e.speed * (e.slowTimer>0 ? e.slowFactor : 1);
-      
-      // Target finding: find closest player
-      let targetPos = player.pos.clone();
-      let isTargetingP2 = false;
-      if (state.isSplitscreen && player2.alive) {
-          const d1 = e.mesh.position.distanceTo(player.pos);
-          const d2 = e.mesh.position.distanceTo(player2.pos);
-          if (d2 < d1) {
-              targetPos = player2.pos.clone();
-              isTargetingP2 = true;
-          }
-      }
-      
-      const toPlayer = targetPos.setY(0).sub(e.mesh.position.clone().setY(0));
+      const toPlayer = player.pos.clone().setY(0).sub(e.mesh.position.clone().setY(0));
       const dist = toPlayer.length();
       e.attackCd -= dt;
       if(e.ranged){
@@ -1663,19 +1639,15 @@ function updateEnemies(dt){
       } else {
         if(dist > 1.3){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
         else if(e.attackCd<=0){
-            if (!isTargetingP2) {
-                if(player.shieldTimer > 0){
-                    flashScreen('120,220,255',0.15);
-                } else {
-                    let dmg = 9;
-                    if(player.blocking) dmg *= 0.3;
-                    player.hp -= dmg;
-                    flashScreen('255,40,40',0.22);
-                }
-            } else {
-                player2.hp -= 9; // Basic P2 damage
-            }
-            e.attackCd = 0.9;
+          if(player.shieldTimer > 0){
+            flashScreen('120,220,255',0.15);
+          } else {
+            let dmg = 9;
+            if(player.blocking) dmg *= 0.3;
+            player.hp -= dmg;
+            flashScreen('255,40,40',0.22);
+          }
+          e.attackCd = 0.9;
         }
       }
       resolveWallCollision(e.mesh.position, 0.6);
@@ -1721,9 +1693,6 @@ function updateProjectiles(dt){
           flashScreen('180,60,255',0.2);
         }
         remove = true;
-      } else if (state.isSplitscreen && player2.alive && p.mesh.position.distanceTo(player2.pos) < 1.0) {
-          player2.hp -= p.dmg;
-          remove = true;
       }
     }
     if(remove){ scene.remove(p.mesh); projectiles.splice(i,1); }
@@ -1741,15 +1710,20 @@ function updateHud(){
   const ammoEl = document.getElementById('ammoLine');
   if(gameMode==='ammo'){
     if(player.style==='fps'){
-      const w = FPS_WEAPONS[player.fpsSlot];
+      const unlocked = getUnlockedFPS();
+      const w = unlocked[player.fpsSlot] || unlocked[0];
       const a = player.ammo[w.name];
       if(a){
         ammoEl.style.display = 'block';
         ammoEl.textContent = (player.reloading && player.reloadingWeapon===w.name) ? 'RELOADING…' : (a.mag + ' / ' + a.reserve);
       }
-    } else if(player.style==='melee' && MELEE_WEAPONS[player.meleeSlot].isBow){
-      ammoEl.style.display = 'block';
-      ammoEl.textContent = 'Arrows: ' + player.arrows;
+    } else if(player.style==='melee'){
+      const unlockedMelee = getUnlockedMelee();
+      const w = unlockedMelee[player.meleeSlot] || unlockedMelee[0];
+      if(w.isBow){
+        ammoEl.style.display = 'block';
+        ammoEl.textContent = 'Arrows: ' + player.arrows;
+      } else ammoEl.style.display = 'none';
     } else {
       ammoEl.style.display = 'none';
     }
@@ -1786,12 +1760,7 @@ function updateDebugPanel(){
   const pressed = [];
   for(let i=0;i<gp.buttons.length;i++){ if(gp.buttons[i].pressed) pressed.push(i); }
   const axes = gp.axes.map(a=>a.toFixed(2)).join(', ');
-  el.innerHTML = `<b>Gamepad 1 debug (P)</b><br>id: ${gp.id.slice(0,40)}<br>buttons: [${pressed.join(', ')}]<br>axes: [${axes}]`;
-  if(gp2) {
-      const p2 = [];
-      for(let i=0;i<gp2.buttons.length;i++){ if(gp2.buttons[i].pressed) p2.push(i); }
-      el.innerHTML += `<br><br><b>Gamepad 2 active</b><br>buttons: [${p2.join(', ')}]`;
-  }
+  el.innerHTML = `<b>Gamepad debug (P to hide)</b><br>id: ${gp.id.slice(0,40)}<br>buttons pressed: [${pressed.join(', ')}]<br>axes: [${axes}]`;
 }
 
 function updateResources(dt){
@@ -1812,11 +1781,88 @@ function updateResources(dt){
   updateAmmoState(dt);
 }
 
+/* SHOP & SHOP UI BUILDER */
+function openShop(){
+  if(document.pointerLockElement) document.exitPointerLock();
+  document.getElementById('shopOverlay').classList.remove('hidden');
+  buildShopUI();
+}
+function buildShopUI(){
+  document.getElementById('shopScoreDisplay').textContent = 'Points Available: ' + state.score;
+  
+  const fpsList = document.getElementById('shopFpsList');
+  const meleeList = document.getElementById('shopMeleeList');
+  const magicList = document.getElementById('shopMagicList');
+  fpsList.innerHTML = ''; meleeList.innerHTML = ''; magicList.innerHTML = '';
+
+  FPS_WEAPONS.forEach(w=>{
+    const item = document.createElement('div');
+    item.className = 'shopItem';
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        refillAllAmmo();
+        buildShopUI();
+      });
+    }
+    item.appendChild(btn);
+    fpsList.appendChild(item);
+  });
+
+  MELEE_WEAPONS.concat(ARROW_TYPES).forEach(w=>{
+    const item = document.createElement('div');
+    item.className = 'shopItem';
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        refillAllAmmo();
+        buildShopUI();
+      });
+    }
+    item.appendChild(btn);
+    meleeList.appendChild(item);
+  });
+
+  RT_SPELLS.concat(LT_SPELLS).forEach(w=>{
+    const item = document.createElement('div');
+    item.className = 'shopItem';
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        buildShopUI();
+      });
+    }
+    item.appendChild(btn);
+    magicList.appendChild(item);
+  });
+}
+
 function startWave(){
   state.wave++;
   state.betweenWaves = false;
   showMsg('WAVE ' + state.wave);
-  player.hp = Math.min(player.maxHp, player.hp + 15);
+  player.hp = Math.min(player.maxHp, player.hp + 20);
   if(gameMode==='ammo') refillAllAmmo();
   if(state.wave > 1){
     generateInteriorMaze();
@@ -1824,11 +1870,6 @@ function startWave(){
     const half = ARENA_HALF-1;
     player.pos.x = Math.max(-half, Math.min(half, player.pos.x));
     player.pos.z = Math.max(-half, Math.min(half, player.pos.z));
-    if(state.isSplitscreen) {
-        resolveWallCollision(player2.pos, 0.6);
-        player2.pos.x = Math.max(-half, Math.min(half, player2.pos.x));
-        player2.pos.z = Math.max(-half, Math.min(half, player2.pos.z));
-    }
     drawRadarBackground();
   }
   spawnWaveEnemies();
@@ -1838,10 +1879,16 @@ function checkWaveClear(){
     if(enemies.filter(e=>e.alive).length===0){
       state.betweenWaves = true;
       showMsg('WAVE CLEAR');
-      setTimeout(()=>{ if(player.alive) startWave(); }, 2200);
+      setTimeout(()=>{ if(player.alive) openShop(); }, 1500);
     }
   }
 }
+
+document.getElementById('nextWaveBtn').addEventListener('click', ()=>{
+  document.getElementById('shopOverlay').classList.add('hidden');
+  if(!touchControlsEnabled && canvas.requestPointerLock) canvas.requestPointerLock();
+  startWave();
+});
 
 function die(){
   player.alive = false;
@@ -1853,7 +1900,7 @@ function die(){
 }
 
 function togglePause(){
-  if(!gameStarted || !player.alive) return;
+  if(!gameStarted || !player.alive || !document.getElementById('shopOverlay').classList.contains('hidden')) return;
   paused = !paused;
   document.getElementById('pauseOverlay').classList.toggle('hidden', !paused);
   if(paused && document.pointerLockElement) document.exitPointerLock();
@@ -1881,17 +1928,17 @@ function frame(now){
       }
     }
     prevButtons = gp ? gp.buttons.map(b=>b.pressed) : [];
-    renderer.render(scene, camera); // Basic render when paused
+    renderer.render(scene, camera);
     return;
   }
 
   if(gpButtonPressed(gpBindings.debug)) toggleDebug();
 
   if(!gameStarted && gpButtonPressed(0)){
-    enterArena(false, false);
+    enterArena(false);
   }
 
-  if(gameStarted && !paused && player.alive){
+  if(gameStarted && !paused && player.alive && document.getElementById('shopOverlay').classList.contains('hidden')){
     if(gpButtonPressed(gpBindings.stylePrev)) cycleStyle(-1);
     if(gpButtonPressed(gpBindings.styleNext)) cycleStyle(1);
     if(gpButtonPressed(gpBindings.slotPrev)) cycleSlot(-1);
@@ -1908,23 +1955,26 @@ function frame(now){
     const secondaryHeld = mouseRDown || gpButtonHeld(gpBindings.secondary) || (touchControlsEnabled && touchState.secondaryHeld);
     if(primaryHeld && !primaryHeldPrev) doPrimary();
     if(!primaryHeld && primaryHeldPrev) releasePrimary();
-    if(player.style==='fps' && primaryHeld && FPS_WEAPONS[player.fpsSlot].name==='Assault Rifle' && player.cooldowns.primary<=0){
-      doPrimary();
+    if(player.style==='fps'){
+      const unlocked = getUnlockedFPS();
+      const w = unlocked[player.fpsSlot] || unlocked[0];
+      if(primaryHeld && (w.name==='Assault Rifle' || w.isFlame) && player.cooldowns.primary<=0){
+        doPrimary();
+      }
     }
     if(secondaryHeld && !secondaryHeldPrev) doSecondaryPress();
     if(!secondaryHeld && secondaryHeldPrev) doSecondaryRelease();
-    if(player.style==='fps' && FPS_WEAPONS[player.fpsSlot].dual){
-      if(primaryHeld && player.cooldowns.primary<=0) doPrimary();
-      if(secondaryHeld && player.cooldowns.secondary<=0) doSecondaryPress();
+    if(player.style==='fps'){
+      const unlocked = getUnlockedFPS();
+      const w = unlocked[player.fpsSlot] || unlocked[0];
+      if(w.dual){
+        if(primaryHeld && player.cooldowns.primary<=0) doPrimary();
+        if(secondaryHeld && player.cooldowns.secondary<=0) doSecondaryPress();
+      }
     }
     primaryHeldPrev = primaryHeld; secondaryHeldPrev = secondaryHeld;
 
     updateMovement(dt);
-    if (state.isSplitscreen) {
-        updateMovementP2(dt);
-        if (player2.hp <= 0) player2.alive = false;
-    }
-
     updateEnemies(dt);
     updateProjectiles(dt);
     updateEffects(dt);
@@ -1941,71 +1991,32 @@ function frame(now){
 
   updateHud();
   if(gameStarted) drawRadar();
-  
-  // ==========================================
-  // SPLITSCREEN RENDERING LOGIC
-  // ==========================================
-  if (state.isSplitscreen) {
-      renderer.setScissorTest(true);
-      
-      // LEFT SCREEN (Player 1)
-      renderer.setScissor(0, 0, innerWidth / 2, innerHeight);
-      renderer.setViewport(0, 0, innerWidth / 2, innerHeight);
-      renderer.render(scene, camera);
-      
-      // RIGHT SCREEN (Player 2)
-      renderer.setScissor(innerWidth / 2, 0, innerWidth / 2, innerHeight);
-      renderer.setViewport(innerWidth / 2, 0, innerWidth / 2, innerHeight);
-      renderer.render(scene, camera2);
-      
-      renderer.setScissorTest(false);
-  } else {
-      // Standard Single Player Rendering
-      renderer.setViewport(0, 0, innerWidth, innerHeight);
-      renderer.render(scene, camera);
-  }
+  renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
 
-window.enterArena = function(useTouch, isSplitscreen){
+function enterArena(useTouch){
   if(gameStarted) return;
-  state.isSplitscreen = isSplitscreen;
-  resize(); // Trigger aspect ratio updates
   setTouchControls(useTouch);
   document.getElementById('startOverlay').classList.add('hidden');
-  document.getElementById('lobbyOverlay').classList.add('hidden');
   gameStarted = true;
   updateHudStyle();
   startWave();
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
-
 document.getElementById('startBtn').addEventListener('touchend', e=>{
-  e.preventDefault(); window.enterArena(true, false);
+  e.preventDefault();
+  enterArena(true);
 }, {passive:false});
-document.getElementById('startBtn').addEventListener('click', ()=>{ window.enterArena(false, false); });
-
-document.getElementById('localSplitBtn').addEventListener('click', ()=>{ window.enterArena(false, true); });
-
-document.getElementById('onlineLobbyBtn').addEventListener('click', ()=>{
-    document.getElementById('startOverlay').classList.add('hidden');
-    document.getElementById('lobbyOverlay').classList.remove('hidden');
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  enterArena(false);
 });
-
-document.getElementById('btnLobbyBack').addEventListener('click', ()=>{
-    document.getElementById('lobbyOverlay').classList.add('hidden');
-    document.getElementById('startOverlay').classList.remove('hidden');
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  location.reload();
 });
-document.getElementById('btnLeaveLobby').addEventListener('click', ()=>{
-    document.getElementById('activeLobbyPanel').classList.add('hidden');
-    document.getElementById('nameEntryPanel').classList.remove('hidden');
-    document.getElementById('lobbyOverlay').classList.add('hidden');
-    document.getElementById('startOverlay').classList.remove('hidden');
-    if (window.leaveFirebaseLobby) window.leaveFirebaseLobby();
+document.getElementById('resumeBtn').addEventListener('click', ()=>{
+  togglePause();
 });
-
-document.getElementById('retryBtn').addEventListener('click', ()=>{ location.reload(); });
-document.getElementById('resumeBtn').addEventListener('click', ()=>{ togglePause(); });
 document.getElementById('startSettingsBtn').addEventListener('click', ()=>openSettings('start'));
 document.getElementById('pauseSettingsBtn').addEventListener('click', ()=>openSettings('pause'));
 document.getElementById('settingsBackBtn').addEventListener('click', closeSettings);
@@ -2029,148 +2040,6 @@ document.getElementById('sensValueLabel').textContent = lookSensitivity.toFixed(
 sensSlider.addEventListener('input', ()=>{ setLookSensitivity(parseFloat(sensSlider.value)); });
 
 };
-</script>
-
-<!-- Firebase Multiplayer Logic -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'wavefighters-multi';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "mock", projectId: "mock" };
-    
-    let app, auth, db, currentUser = null, myPlayerName = "", heartbeatInterval = null;
-    let onlinePlayers = [], incomingRequests = [], currentlyShowingToastFor = null;
-
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => { currentUser = user; });
-    } catch(e) { console.error("Firebase init failed (Local test mode): ", e); }
-
-    const getPlayersCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'players');
-    const getRequestsCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'requests');
-
-    window.joinFirebaseLobby = async function(name) {
-        if (!currentUser || !db) return alert("Multiplayer server offline.");
-        myPlayerName = name;
-        
-        document.getElementById('nameEntryPanel').classList.add('hidden');
-        document.getElementById('activeLobbyPanel').classList.remove('hidden');
-
-        const myDocRef = doc(getPlayersCol(), currentUser.uid);
-        await setDoc(myDocRef, { name: myPlayerName, uid: currentUser.uid, status: 'in-lobby', lastActive: Date.now() });
-
-        heartbeatInterval = setInterval(() => {
-            setDoc(myDocRef, { lastActive: Date.now() }, { merge: true });
-        }, 5000);
-
-        onSnapshot(getPlayersCol(), (snapshot) => {
-            const now = Date.now();
-            onlinePlayers = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (now - data.lastActive < 15000 && data.uid !== currentUser.uid) {
-                    onlinePlayers.push(data);
-                }
-            });
-            renderPlayerList();
-        }, (err) => console.error(err));
-
-        onSnapshot(getRequestsCol(), (snapshot) => {
-            incomingRequests = [];
-            snapshot.forEach(doc => {
-                const req = doc.data(); req.id = doc.id;
-                if (req.toUid === currentUser.uid && req.status === 'pending') incomingRequests.push(req);
-                if (req.fromUid === currentUser.uid && req.status === 'accepted') {
-                    alert(`${req.toName} accepted! Starting splitscreen mock.`);
-                    deleteDoc(doc.ref);
-                    window.enterArena(false, true); // Mock transition
-                }
-            });
-            handleIncomingRequests();
-        }, (err) => console.error(err));
-    };
-
-    window.leaveFirebaseLobby = function() {
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        if (currentUser && db) deleteDoc(doc(getPlayersCol(), currentUser.uid));
-    };
-
-    window.sendJoinRequest = async function(targetUid, targetName) {
-        if (!currentUser) return;
-        const reqRef = doc(getRequestsCol(), `${currentUser.uid}_${targetUid}`);
-        await setDoc(reqRef, { fromUid: currentUser.uid, fromName: myPlayerName, toUid: targetUid, toName: targetName, status: 'pending', timestamp: Date.now() });
-        alert(`Request sent to ${targetName}.`);
-    };
-
-    window.acceptRequest = async function(requestId, fromName) {
-        if (!currentUser) return;
-        await updateDoc(doc(getRequestsCol(), requestId), { status: 'accepted' });
-        document.getElementById('pauseOverlay').classList.add('hidden');
-        window.enterArena(false, true); // Mock starting splitscreen
-    };
-    
-    window.rejectRequest = async function(requestId) {
-        if (!currentUser) return;
-        await deleteDoc(doc(getRequestsCol(), requestId));
-    };
-
-    function renderPlayerList() {
-        const listEl = document.getElementById('playerList');
-        if (onlinePlayers.length === 0) { listEl.innerHTML = `<div style="color:#888; text-align:center;">No other pilots online.</div>`; return; }
-        listEl.innerHTML = onlinePlayers.map(p => `
-            <div class="player-list-item">
-                <div><span style="font-weight:bold; color:white;">${p.name}</span> <span style="font-size:10px; color:#3bff8a;">● ${p.status}</span></div>
-                <button onclick="window.sendJoinRequest('${p.uid}', '${p.name}')" class="bindBtn" style="background: rgba(59,138,255,0.5)">Join</button>
-            </div>
-        `).join('');
-    }
-
-    function handleIncomingRequests() {
-        const toastEl = document.getElementById('notification-toast');
-        const containerEl = document.getElementById('pending-requests-container');
-        if (incomingRequests.length > 0) {
-            const req = incomingRequests[0];
-            if (currentlyShowingToastFor !== req.id) {
-                document.getElementById('toast-desc').innerText = `${req.fromName} wants to join! Press ESC/Pause to manage.`;
-                toastEl.classList.add('show');
-                currentlyShowingToastFor = req.id;
-                setTimeout(() => { toastEl.classList.remove('show'); currentlyShowingToastFor = null; }, 8000);
-            }
-            containerEl.classList.remove('hidden');
-            document.getElementById('requests-list').innerHTML = incomingRequests.map(r => `
-                <div style="background:rgba(255,255,255,0.1); padding:8px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>${r.fromName}</span>
-                    <div>
-                        <button onclick="window.acceptRequest('${r.id}', '${r.fromName}')" class="bindBtn" style="background:#3bff8a; color:black;">Accept</button>
-                        <button onclick="window.rejectRequest('${r.id}')" class="bindBtn" style="background:#ff3b3b;">Reject</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            toastEl.classList.remove('show');
-            currentlyShowingToastFor = null;
-            containerEl.classList.add('hidden');
-        }
-    }
-
-    document.getElementById('btnLogin').addEventListener('click', () => {
-        const name = document.getElementById('playerNameInput').value.trim();
-        if (name) window.joinFirebaseLobby(name); else alert("Enter a pilot name!");
-    });
 </script>
 
 <script>
