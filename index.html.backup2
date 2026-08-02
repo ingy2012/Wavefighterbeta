@@ -109,8 +109,11 @@
     #styleBox{right:140px;top:16px;text-align:right;}
     #topCenter{left:50%;transform:translateX(-50%);text-align:center;top:12px;}
     
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:20px;bottom:95px;width:110px;height:110px;}
     #touchJoystickKnob{left:32px;top:32px;width:46px;height:46px;}
+    
+    /* Shift main action cluster LEFT */
     #touchMainButtons{right:85px;bottom:20px;}
     
     #touchActionGrid{
@@ -127,6 +130,8 @@
     #radar{width:90px;height:90px;top:10px;right:10px;}
     .bar-wrap{left:16px;bottom:16px;width:180px;}
     #styleBox{right:110px;top:12px;text-align:right;}
+    
+    /* Move wave/score text to the left side in portrait to prevent overlap with style text */
     #topCenter{
       left:64px;
       top:12px;
@@ -134,10 +139,14 @@
       text-align:left;
     }
     
+    /* Move joystick UP above Health/Mana bars */
     #touchJoystickBase{left:16px;bottom:100px;width:105px;height:105px;}
     #touchJoystickKnob{left:30px;top:30px;width:44px;height:44px;}
+    
+    /* Main action buttons shifted left */
     #touchMainButtons{right:24px;bottom:24px;}
     
+    /* Raise style/weapon switcher grid UP higher so it doesn't crowd action buttons */
     #touchActionGrid{
       right:16px;
       bottom:230px;
@@ -210,7 +219,6 @@
 <div class="overlay" id="startOverlay">
   <h1>TRIFORM: WAVE ARENA</h1>
   <h2>fight endless waves in the maze &mdash; switch combat styles on the fly</h2>
-  
   <div class="controls-grid">
     <div class="cgroup">
       <h3>MOVE / LOOK</h3>
@@ -240,17 +248,6 @@
       <div>Radar top-right shows enemies and walls</div>
     </div>
   </div>
-
-  <div style="background:rgba(255,255,255,.05); padding: 12px; border-radius: 10px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,.12); max-width: 600px; width: 100%;">
-    <h3 style="margin:0 0 10px; font-size:13px; letter-spacing:1.5px; color:#ffb43c;">SELECT GAME MODE</h3>
-    <div id="modeButtons" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-      <button class="bindBtn modeBtn" data-mode="unlimited">Unlimited</button>
-      <button class="bindBtn modeBtn" data-mode="ammo">Ammo + Progression</button>
-      <button class="bindBtn modeBtn" data-mode="precision">Precision Score</button>
-    </div>
-    <div id="modeDesc" style="font-size:11px;opacity:.8;margin-top:10px;"></div>
-  </div>
-
   <button class="big" id="startBtn">ENTER ARENA</button>
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
@@ -292,7 +289,15 @@
 
 <div class="overlay hidden" id="settingsOverlay">
   <h1 style="font-size:28px;">SETTINGS</h1>
-  
+  <div style="max-width:600px;width:100%;text-align:left;margin-top:4px;">
+    <h3 style="opacity:.7;font-size:12px;letter-spacing:1px;">SHOOTING MODE</h3>
+    <div id="modeButtons" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="bindBtn modeBtn" data-mode="unlimited">Unlimited</button>
+      <button class="bindBtn modeBtn" data-mode="ammo">Ammo + Reload</button>
+      <button class="bindBtn modeBtn" data-mode="precision">Precision Score</button>
+    </div>
+    <div id="modeDesc" style="font-size:11px;opacity:.65;margin-top:4px;"></div>
+  </div>
   <div style="max-width:600px;width:100%;text-align:left;margin-top:10px;">
     <h3 style="opacity:.7;font-size:12px;letter-spacing:1px;">TOUCH CONTROLS</h3>
     <div style="display:flex;gap:8px;">
@@ -305,7 +310,6 @@
       <input type="range" id="sensSlider" min="0.4" max="2.5" step="0.1" value="1" style="width:100%;accent-color:#66d9ff;margin-top:4px;">
     </div>
   </div>
-  
   <h2 style="margin-top:12px;">click a binding, then press key or button</h2>
   <div id="settingsBody">
     <div class="bindCol">
@@ -717,6 +721,7 @@ function openSettings(from){
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('settingsOverlay').classList.remove('hidden');
   buildSettingsUI();
+  buildModeButtons();
   buildTouchModeButtons();
 }
 function closeSettings(){
@@ -1053,8 +1058,8 @@ document.getElementById('bestScore').textContent = bestScore;
 
 const GAME_MODES = {
   unlimited: 'Classic — infinite ammo and mana. Everything unlocked.',
-  ammo: 'Progression — start with basics, earn points to buy upgrades!',
-  precision: 'Progression — unlimited ammo, but spamming lowers score multiplier.',
+  ammo: 'Limited ammo, refilled each wave. Buy upgrades with points!',
+  precision: 'Unlimited ammo, but score multiplier decreases with fast firing.',
 };
 let gameMode = localStorage.getItem('tf_gamemode') || 'unlimited';
 const PRECISION_DECAY_PER_SHOT = 0.05;
@@ -1104,28 +1109,15 @@ function applyPrecisionDecay(){
   if(gameMode!=='precision') return;
   state.precisionMultiplier = Math.max(PRECISION_FLOOR, state.precisionMultiplier - PRECISION_DECAY_PER_SHOT);
 }
-
 function setGameMode(mode){
   gameMode = mode;
   localStorage.setItem('tf_gamemode', mode);
   player.reloading = false; player.reloadTimer = 0; player.reloadingWeapon = null;
   state.precisionMultiplier = 1;
-  
-  // Hard reset all slots back to 0 to prevent the HUD displaying a now-locked weapon visually
-  player.fpsSlot = 0;
-  player.meleeSlot = 0;
-  player.arrowTypeIndex = 0;
-  player.rtSpellIndex = 0;
-  player.ltSpellIndex = 0;
-
   if(mode==='ammo' && gameStarted) refillAllAmmo();
   buildModeButtons();
   updateTouchActionVisibility();
-  
-  // Call update to enforce visual refresh of the weapon name before starting
-  updateHudStyle();
 }
-
 function buildModeButtons(){
   document.querySelectorAll('.modeBtn').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.mode===gameMode);
@@ -2007,14 +1999,6 @@ function enterArena(useTouch){
   if(gameStarted) return;
   setTouchControls(useTouch);
   document.getElementById('startOverlay').classList.add('hidden');
-  
-  // Just in case, reset the visual slots when entering
-  player.fpsSlot = 0;
-  player.meleeSlot = 0;
-  player.arrowTypeIndex = 0;
-  player.rtSpellIndex = 0;
-  player.ltSpellIndex = 0;
-  
   gameStarted = true;
   updateHudStyle();
   startWave();
