@@ -582,7 +582,7 @@ const STYLES = ['fps','melee','magic'];
 /* WEAPON & SPELL DEFINITIONS WITH COST & UNLOCK PROGRESSION */
 const FPS_WEAPONS = [
   {id:'dual_pistols', name:'Dual Pistols', dmg:5, rate:0.16, hitscan:true, dual:true, magSize:16, reserveSize:64, reloadTime:1.0, cost:0, unlocked:true},
-  {id:'bolt_rifle', name:'Bolt Rifle (1x)', dmg:32, rate:0.7, hitscan:true, zoomLevels:[75,50], magSize:6, reserveSize:30, reloadTime:1.5, cost:50, unlocked:false},
+  {id:'bolt_rifle', name:'Bolt Rifle (1x)', dmg:32, rate:0.7, hitscan:true, zoomLevels:[75,50], magSize:6, reserveSize:30, reloadTime:1.5, cost:80, unlocked:false},
   {id:'shotgun', name:'Shotgun', dmg:6, pellets:6, rate:1.1, hitscan:true, spread:0.12, zoomLevels:[75], magSize:6, reserveSize:24, reloadTime:1.6, cost:150, unlocked:false},
   {id:'assault_rifle', name:'Assault Rifle', dmg:8, rate:0.12, hitscan:true, zoomLevels:[75,55], magSize:30, reserveSize:90, reloadTime:1.4, cost:240, unlocked:false},
   {id:'sniper', name:'Sniper Rifle', dmg:52, rate:1.1, hitscan:true, zoomLevels:[75,42,18], magSize:5, reserveSize:20, reloadTime:1.8, cost:350, unlocked:false},
@@ -614,7 +614,7 @@ const LT_SPELLS = [
   {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
   {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
   {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
-  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:8, color:0x66d9ff, cost:300, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:3, color:0x66d9ff, cost:400, unlocked:false},
 ];
 
 function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
@@ -1500,17 +1500,7 @@ function castLTSpell(){
         damageEnemy(e, spell.dmg);
         e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
-        
-        // Raycast check to prevent wall clipping
-        raycaster.set(e.mesh.position.clone().setY(1), dir);
-        raycaster.far = spell.knockback;
-        const hits = raycaster.intersectObjects(wallMeshes, true);
-        let actualKnockback = spell.knockback;
-        if(hits.length > 0) {
-            actualKnockback = Math.max(0, hits[0].distance - 0.7); // 0.7 for body radius margin
-        }
-        
-        e.mesh.position.addScaledVector(dir, actualKnockback);
+        e.mesh.position.addScaledVector(dir, spell.knockback);
         resolveWallCollision(e.mesh.position, 0.6);
       }
     }
@@ -1653,10 +1643,10 @@ function updateEnemies(dt){
       if(e.ranged){
         if(dist > e.preferredRange+1){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
         else if(dist < e.preferredRange-1){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, -spd*dt*0.6); }
-        if(dist < 22 && e.attackCd<=0 && e.slowTimer<=0){ fireEnemyBolt(e); e.attackCd = 2.2; }
+        if(dist < 22 && e.attackCd<=0){ fireEnemyBolt(e); e.attackCd = 2.2; }
       } else {
         if(dist > 1.3){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
-        else if(e.attackCd<=0 && e.slowTimer<=0){
+        else if(e.attackCd<=0){
           if(player.shieldTimer > 0){
             flashScreen('120,220,255',0.15);
           } else {
