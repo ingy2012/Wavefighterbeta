@@ -579,7 +579,7 @@ const EYE_H = 1.7;
 
 const STYLES = ['fps','melee','magic'];
 
-/* WEAPON & SPELL DEFINITIONS WITH TIERED UPGRADES */
+/* WEAPON & SPELL DEFINITIONS WITH COST & UNLOCK PROGRESSION */
 const FPS_WEAPONS = [
   {id:'dual_pistols', name:'Dual Pistols', dmg:5, rate:0.16, hitscan:true, dual:true, magSize:16, reserveSize:64, reloadTime:1.0, cost:0, unlocked:true},
   {id:'bolt_rifle', name:'Bolt Rifle (1x)', dmg:32, rate:0.7, hitscan:true, zoomLevels:[75,50], magSize:6, reserveSize:30, reloadTime:1.5, cost:50, unlocked:false},
@@ -604,81 +604,17 @@ const ARROW_TYPES = [
   {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
 
-/* TIERED MAGIC SPELLS */
 const RT_SPELLS = [
-  {
-    id: 'sp_fireball', name: 'Fireball',
-    baseDmg: 20, maxDmg: 60, baseSplash: 2.5, maxSplash: 4.5, manaCost: 15, color: 0xff6a2b,
-    tier: 0,
-    upgrades: [
-      { name: 'Fireball Tier 1 (Wide Blast)', cost: 120, desc: 'Increases splash radius and base damage.' },
-      { name: 'Fireball Tier 2 (Inferno Burst)', cost: 240, desc: 'Maximum splash and burn damage.' }
-    ],
-    unlocked: true, cost: 0
-  },
-  {
-    id: 'sp_ice', name: 'Ice Spike',
-    baseDmg: 10, maxDmg: 35, manaCost: 15, color: 0x8adfff, freezeThreshold: 0.7, freezeTime: 4,
-    tier: 0,
-    upgrades: [
-      { name: 'Ice Spike Tier 1 (Deep Freeze)', cost: 130, desc: 'Easier freezing threshold & longer chill.' },
-      { name: 'Ice Spike Tier 2 (Glacial Shard)', cost: 250, desc: 'Massive freeze duration and damage.' }
-    ],
-    unlocked: false, cost: 150
-  },
-  {
-    id: 'sp_lightning', name: 'Lightning',
-    baseDmg: 15, maxDmg: 45, manaCost: 18, color: 0xfff44a, chainRange: 6, maxChain: 3, stunTime: 0.6, chainFalloff: 0.65,
-    tier: 0,
-    upgrades: [
-      { name: 'Lightning Tier 1 (Arc Storm)', cost: 160, desc: 'Increases chain targets to 4 and range.' },
-      { name: 'Lightning Tier 2 (Thunder God)', cost: 320, desc: 'Chains up to 6 targets with minimal falloff.' }
-    ],
-    unlocked: false, cost: 300
-  }
+  {id:'sp_fireball', name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b, cost:0, unlocked:true},
+  {id:'sp_ice', name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, cost:150, unlocked:false},
+  {id:'sp_lightning', name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65, cost:300, unlocked:false},
 ];
 
 const LT_SPELLS = [
-  {
-    id: 'sp_air', name: 'Air Burst',
-    dmg: 8, radius: 6, knockback: 4, stun: 1.2, manaCost: 15, cd: 1.2, color: 0xffffff,
-    tier: 0,
-    upgrades: [
-      { name: 'Air Burst Tier 1 (Gale Force)', cost: 100, desc: 'Wider radius and stronger pushback.' },
-      { name: 'Air Burst Tier 2 (Hurricane Wave)', cost: 220, desc: 'Massive shockwave radius and stun duration.' }
-    ],
-    unlocked: true, cost: 0
-  },
-  {
-    id: 'sp_poison', name: 'Poison Bolt',
-    dmg: 5, dot: {dmg:3,time:4}, slow: {factor:0.7,time:3}, manaCost: 12, cd: 0.5, color: 0x8aff6a,
-    tier: 0,
-    upgrades: [
-      { name: 'Poison Tier 1 (Toxic Venin)', cost: 110, desc: 'Stronger over-time damage and slow effect.' },
-      { name: 'Poison Tier 2 (Plague Bolt)', cost: 230, desc: 'Deadly neurotoxin dots.' }
-    ],
-    unlocked: false, cost: 120
-  },
-  {
-    id: 'sp_teleport', name: 'Teleport',
-    manaCost: 20, cd: 4, color: 0xffffff,
-    tier: 0,
-    upgrades: [
-      { name: 'Teleport Tier 1 (Swift Blink)', cost: 150, desc: 'Reduces cooldown and mana cost slightly.' }
-    ],
-    unlocked: false, cost: 220
-  },
-  {
-    id: 'sp_aegis', name: 'Aegis Shield',
-    manaCost: 40, cd: 22, duration: 3, color: 0x66d9ff,
-    tier: 0,
-    upgrades: [
-      { name: 'Aegis Tier 1 (Enhanced Barrier)', cost: 140, desc: 'Increases shield duration to 5 seconds.' },
-      { name: 'Aegis Tier 2 (Radiant Bastion)', cost: 260, desc: 'Increases shield duration to 8 seconds.' },
-      { name: 'Aegis Tier 3 (Divine Citadel)', cost: 400, desc: 'Increases shield duration to 10 seconds.' }
-    ],
-    unlocked: false, cost: 300
-  }
+  {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
+  {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:8, color:0x66d9ff, cost:300, unlocked:false},
 ];
 
 function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
@@ -693,7 +629,7 @@ const DEFAULT_KEY_BINDINGS = {
   stylePrev:'KeyQ', styleNext:'KeyE',
   slotPrev:'KeyR', slotNext:'KeyF',
   subPrev:'ArrowLeft', subNext:'ArrowRight',
-  shout:'KeyT', pause:'KeyP', debug:'KeyO', reload:'KeyG',
+  shout:'KeyT', pause:'Escape', debug:'KeyP', reload:'KeyG',
 };
 const DEFAULT_GP_BINDINGS = {
   jump:0, shout:3, pause:9, debug:8, sprint:10, reload:1,
@@ -999,27 +935,18 @@ function fireFlameStream(){
 }
 function fireFireballCharged(frac){
   const spell = RT_SPELLS[0];
-  let maxDmg = spell.maxDmg;
-  let maxSplash = spell.maxSplash;
-  if(spell.tier === 1){ maxDmg = 80; maxSplash = 6.0; }
-  else if(spell.tier >= 2){ maxDmg = 110; maxSplash = 7.5; }
-  const dmg = spell.baseDmg + (maxDmg - spell.baseDmg)*frac;
-  const splash = spell.baseSplash + (maxSplash - spell.baseSplash)*frac;
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
+  const splash = spell.baseSplash + (spell.maxSplash-spell.baseSplash)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.8+frac*(0.9+spell.tier*0.3));
+  mesh.scale.setScalar(0.8+frac*0.9);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(22), dmg, friendly:true, life:3, splash});
 }
 function fireIceSpikeCharged(frac){
   const spell = RT_SPELLS[1];
-  let maxDmg = spell.maxDmg;
-  let freezeThresh = spell.freezeThreshold;
-  let freezeT = spell.freezeTime;
-  if(spell.tier === 1){ maxDmg = 45; freezeThresh = 0.55; freezeT = 5.5; }
-  else if(spell.tier >= 2){ maxDmg = 65; freezeThresh = 0.4; freezeT = 7.0; }
-  const dmg = spell.baseDmg + (maxDmg - spell.baseDmg)*frac;
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
@@ -1027,23 +954,19 @@ function fireIceSpikeCharged(frac){
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
     onHit:(e)=>{
-      if(frac >= freezeThresh){ e.frozenTimer = freezeT; showMsg('FROZEN SOLID!'); }
-      else { e.slowTimer = 3; e.slowFactor = 0.4; showMsg('CHILLED'); }
+      if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
+      else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
 }
 function firePoisonBolt(){
   const spell = LT_SPELLS[1];
-  let dotDmg = spell.dot.dmg;
-  let slowFac = spell.slow.factor;
-  if(spell.tier === 1){ dotDmg = 5; slowFac = 0.55; }
-  else if(spell.tier >= 2){ dotDmg = 8; slowFac = 0.4; }
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
   mesh.scale.setScalar(0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:spell.dmg + spell.tier*4, friendly:true, life:3, splash:0,
-    onHit:(e)=>{ e.dotTimer=spell.dot.time+spell.tier; e.dotDmg=dotDmg; e.dotAcc=0; e.slowTimer=spell.slow.time+1; e.slowFactor=slowFac; }});
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:spell.dmg, friendly:true, life:3, splash:0,
+    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=spell.dot.dmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=spell.slow.factor; }});
 }
 function fireEnemyBolt(e){
   const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
@@ -1054,12 +977,6 @@ function fireEnemyBolt(e){
 function fireLightningCharged(frac){
   const spell = RT_SPELLS[2];
   let dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
-  let maxChain = spell.maxChain;
-  let chainRange = spell.chainRange;
-  let falloff = spell.chainFalloff;
-  if(spell.tier === 1){ maxChain = 4; chainRange = 7.5; falloff = 0.75; dmg *= 1.25; }
-  else if(spell.tier >= 2){ maxChain = 6; chainRange = 9.0; falloff = 0.85; dmg *= 1.5; }
-
   const dir = getForward();
   const origin = player.pos.clone();
   raycaster.set(origin, dir);
@@ -1072,14 +989,14 @@ function fireLightningCharged(frac){
   if(!current){ return; }
   const points = [origin.clone()];
   const hitSet = new Set();
-  for(let chain=0; chain<=maxChain; chain++){
+  for(let chain=0; chain<=spell.maxChain; chain++){
     if(!current || !current.alive) break;
     damageEnemy(current, dmg);
-    current.stunTimer = Math.max(current.stunTimer, spell.stunTime + spell.tier*0.2);
+    current.stunTimer = Math.max(current.stunTimer, spell.stunTime);
     hitSet.add(current);
     points.push(current.mesh.position.clone().setY(1));
-    dmg *= falloff;
-    let next = null, bestD = chainRange;
+    dmg *= spell.chainFalloff;
+    let next = null, bestD = spell.chainRange;
     for(const e2 of enemies){
       if(!e2.alive || hitSet.has(e2)) continue;
       const d = e2.mesh.position.distanceTo(current.mesh.position);
@@ -1194,6 +1111,7 @@ function setGameMode(mode){
   player.reloading = false; player.reloadTimer = 0; player.reloadingWeapon = null;
   state.precisionMultiplier = 1;
   
+  // Hard reset all slots back to 0 to prevent the HUD displaying a now-locked weapon visually
   player.fpsSlot = 0;
   player.meleeSlot = 0;
   player.arrowTypeIndex = 0;
@@ -1203,6 +1121,8 @@ function setGameMode(mode){
   if(mode==='ammo' && gameStarted) refillAllAmmo();
   buildModeButtons();
   updateTouchActionVisibility();
+  
+  // Call update to enforce visual refresh of the weapon name before starting
   updateHudStyle();
 }
 
@@ -1425,8 +1345,8 @@ function updateHudStyle(){
     const rt = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     const unlockedLT = getUnlockedLTSpells();
     const lt = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
-    wname = 'RT: ' + rt.name + (rt.tier > 0 ? ` (T${rt.tier})` : '');
-    sub = 'LT: ' + lt.name + (lt.tier > 0 ? ` (T${lt.tier})` : '');
+    wname = 'RT: ' + rt.name;
+    sub = 'LT: ' + lt.name;
   }
   document.getElementById('weaponName').textContent = wname;
   document.getElementById('subLine').textContent = sub;
@@ -1573,27 +1493,21 @@ function castLTSpell(){
     spawnRing(0xffffff);
     flashScreen('220,220,255',0.15);
     applyPrecisionDecay();
-    let radius = spell.radius;
-    let knockback = spell.knockback;
-    let stun = spell.stun;
-    let dmg = spell.dmg;
-    if(spell.tier === 1){ radius = 8.0; knockback = 6.5; stun = 1.8; dmg = 15; }
-    else if(spell.tier >= 2){ radius = 10.5; knockback = 9.0; stun = 2.5; dmg = 25; }
-
     for(const e of enemies){
       if(!e.alive) continue;
       const d = e.mesh.position.distanceTo(player.pos);
-      if(d < radius){
-        damageEnemy(e, dmg);
-        e.stunTimer = stun;
+      if(d < spell.radius){
+        damageEnemy(e, spell.dmg);
+        e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
         
+        // Raycast check to prevent wall clipping
         raycaster.set(e.mesh.position.clone().setY(1), dir);
-        raycaster.far = knockback;
+        raycaster.far = spell.knockback;
         const hits = raycaster.intersectObjects(wallMeshes, true);
-        let actualKnockback = knockback;
+        let actualKnockback = spell.knockback;
         if(hits.length > 0) {
-            actualKnockback = Math.max(0, hits[0].distance - 0.7);
+            actualKnockback = Math.max(0, hits[0].distance - 0.7); // 0.7 for body radius margin
         }
         
         e.mesh.position.addScaledVector(dir, actualKnockback);
@@ -1605,16 +1519,12 @@ function castLTSpell(){
     firePoisonBolt();
     applyPrecisionDecay();
   } else if(spell.id==='sp_teleport'){
-    player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd - (spell.tier > 0 ? 0.8 : 0);
+    player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
     doTeleport();
   } else if(spell.id==='sp_aegis'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    let dur = 3;
-    if(spell.tier === 1) dur = 5;
-    else if(spell.tier === 2) dur = 8;
-    else if(spell.tier >= 3) dur = 10;
-    player.shieldTimer = dur;
-    showMsg(`AEGIS SHIELD (${dur}s)`);
+    player.shieldTimer = spell.duration;
+    showMsg('AEGIS SHIELD');
     flashScreen('120,220,255',0.25);
   }
 }
@@ -1868,7 +1778,7 @@ function updateDebugPanel(){
   const pressed = [];
   for(let i=0;i<gp.buttons.length;i++){ if(gp.buttons[i].pressed) pressed.push(i); }
   const axes = gp.axes.map(a=>a.toFixed(2)).join(', ');
-  el.innerHTML = `<b>Gamepad debug (O to hide)</b><br>id: ${gp.id.slice(0,40)}<br>buttons pressed: [${pressed.join(', ')}]<br>axes: [${axes}]`;
+  el.innerHTML = `<b>Gamepad debug (P to hide)</b><br>id: ${gp.id.slice(0,40)}<br>buttons pressed: [${pressed.join(', ')}]<br>axes: [${axes}]`;
 }
 
 function updateResources(dt){
@@ -1889,7 +1799,7 @@ function updateResources(dt){
   updateAmmoState(dt);
 }
 
-/* SHOP & TIERED SHOP UI BUILDER */
+/* SHOP & SHOP UI BUILDER */
 function openShop(){
   if(document.pointerLockElement) document.exitPointerLock();
   document.getElementById('shopOverlay').classList.remove('hidden');
@@ -1945,59 +1855,24 @@ function buildShopUI(){
     meleeList.appendChild(item);
   });
 
-  /* BUILD MAGIC & SPELL UPGRADES IN SHOP */
-  RT_SPELLS.concat(LT_SPELLS).forEach(spell=>{
-    const isUnlocked = spell.unlocked || gameMode==='unlimited';
-    
-    // Base purchase item if not unlocked
-    if(!isUnlocked){
-      const item = document.createElement('div');
-      item.className = 'shopItem';
-      const canAfford = state.score >= spell.cost;
-      item.innerHTML = `<div><span class="itemTitle">${spell.name}</span><span class="itemSub">${spell.cost} PTS</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (!canAfford ? ' cant' : '');
-      btn.textContent = 'BUY';
+  RT_SPELLS.concat(LT_SPELLS).forEach(w=>{
+    const item = document.createElement('div');
+    item.className = 'shopItem';
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
       btn.addEventListener('click', ()=>{
-        if(state.score >= spell.cost){
-          state.score -= spell.cost;
-          spell.unlocked = true;
-          buildShopUI();
-        }
+        state.score -= w.cost;
+        w.unlocked = true;
+        buildShopUI();
       });
-      item.appendChild(btn);
-      magicList.appendChild(item);
-    } else if(spell.upgrades && spell.tier < spell.upgrades.length){
-      // Render next available tier upgrade
-      const upg = spell.upgrades[spell.tier];
-      const item = document.createElement('div');
-      item.className = 'shopItem';
-      const canAfford = state.score >= upg.cost;
-      item.innerHTML = `<div><span class="itemTitle">${upg.name}</span><span class="itemSub">${upg.cost} PTS &bull; ${upg.desc}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (!canAfford ? ' cant' : '');
-      btn.textContent = 'UPGRADE';
-      btn.addEventListener('click', ()=>{
-        if(state.score >= upg.cost){
-          state.score -= upg.cost;
-          spell.tier++;
-          showMsg(`${spell.name} UPGRADED!`);
-          buildShopUI();
-        }
-      });
-      item.appendChild(btn);
-      magicList.appendChild(item);
-    } else {
-      // Fully maxed tier item display
-      const item = document.createElement('div');
-      item.className = 'shopItem';
-      item.innerHTML = `<div><span class="itemTitle">${spell.name} (MAXED)</span><span class="itemSub">Tier ${spell.tier} Fully Upgraded</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn bought';
-      btn.textContent = 'MAX';
-      item.appendChild(btn);
-      magicList.appendChild(item);
     }
+    item.appendChild(btn);
+    magicList.appendChild(item);
   });
 }
 
@@ -2143,6 +2018,7 @@ function enterArena(useTouch){
   setTouchControls(useTouch);
   document.getElementById('startOverlay').classList.add('hidden');
   
+  // Just in case, reset the visual slots when entering
   player.fpsSlot = 0;
   player.meleeSlot = 0;
   player.arrowTypeIndex = 0;
