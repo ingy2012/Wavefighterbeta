@@ -33,7 +33,7 @@
   #crosshair:after{top:9px;left:2px;height:2px;width:16px;}
   #chargeRing{position:absolute;top:50%;left:50%;width:44px;height:44px;transform:translate(-50%,-50%);border-radius:50%;border:3px solid rgba(255,220,120,.9);clip-path:inset(0 0 0 0);display:none;}
   #flash{position:fixed;inset:0;background:rgba(255,0,0,0);transition:background .1s;pointer-events:none;z-index:3;}
-  #msgCenter{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);text-align:center;font-size:28px;font-weight:800;letter-spacing:3px;opacity:0;transition:opacity .4s;}
+  #msgCenter{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);text-align:center;font-size:28px;font-weight:800;letter-spacing:3px;opacity:0;transition:opacity .4s; z-index: 100;}
   
   .overlay{position:fixed;inset:0;background:rgba(5,8,15,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#eee;text-align:center;pointer-events:all;z-index:20;}
   .overlay h1{font-size:36px;letter-spacing:4px;margin:0 0 6px;background:linear-gradient(90deg,#ff8a3b,#3bd0ff,#b93bff);-webkit-background-clip:text;background-clip:text;color:transparent;}
@@ -251,7 +251,11 @@
     <div id="modeDesc" style="font-size:11px;opacity:.8;margin-top:10px;"></div>
   </div>
 
-  <button class="big" id="startBtn">ENTER ARENA</button>
+  <div style="display:flex; gap:12px; justify-content:center;">
+    <button class="big" id="startBtn">ENTER ARENA</button>
+    <button class="big" id="loadStateBtn" style="display:none; background:linear-gradient(135deg,#3ba7ff,#3bffd8); color:#000;">LOAD STATE</button>
+  </div>
+  
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
 </div>
@@ -287,6 +291,7 @@
 <div class="overlay hidden" id="pauseOverlay">
   <h1 style="font-size:32px;">PAUSED</h1>
   <button class="big" id="resumeBtn">RESUME</button>
+  <button class="big" id="saveStateBtn" style="margin-top:12px; background:linear-gradient(135deg,#ffb43c,#ff6a2b);">SAVE STATE</button>
   <button class="big" id="pauseSettingsBtn" style="margin-top:12px;background:linear-gradient(135deg,#3b8aff,#3bd0ff);">SETTINGS</button>
 </div>
 
@@ -396,6 +401,7 @@ let wallMeshes = [];
 let wallColliders = [];
 const outerWallMeshes = [], outerWallColliders = [];
 let innerWallMeshes = [], innerWallColliders = [];
+let currentMazeData = null; // Store maze structure to persist across saves
 
 function addWallTo(meshArr, colliderArr, cx, cz, w, d){
   const geo = new THREE.BoxGeometry(w, WALL_H, d);
@@ -412,55 +418,63 @@ addWallTo(outerWallMeshes, outerWallColliders, 0, ARENA_HALF, ARENA_HALF*2+WALL_
 addWallTo(outerWallMeshes, outerWallColliders, -ARENA_HALF, 0, WALL_T, ARENA_HALF*2+WALL_T);
 addWallTo(outerWallMeshes, outerWallColliders, ARENA_HALF, 0, WALL_T, ARENA_HALF*2+WALL_T);
 
-function generateInteriorMaze(){
+function generateInteriorMaze(savedMazeData){
   for(const m of innerWallMeshes) scene.remove(m);
   innerWallMeshes = []; innerWallColliders = [];
 
-  const vWall = {}, hWall = {};
+  let vWall = {}, hWall = {};
   const vKey=(i,j)=>i+'_'+j, hKey=(j,i)=>j+'_'+i;
-  for(let i=1;i<GRID_N;i++) for(let j=0;j<GRID_N;j++) vWall[vKey(i,j)] = Math.random() < KEEP_PROB;
-  for(let j=1;j<GRID_N;j++) for(let i=0;i<GRID_N;i++) hWall[hKey(j,i)] = Math.random() < KEEP_PROB;
+  
+  if (savedMazeData) {
+    vWall = savedMazeData.vWall;
+    hWall = savedMazeData.hWall;
+  } else {
+    for(let i=1;i<GRID_N;i++) for(let j=0;j<GRID_N;j++) vWall[vKey(i,j)] = Math.random() < KEEP_PROB;
+    for(let j=1;j<GRID_N;j++) for(let i=0;i<GRID_N;i++) hWall[hKey(j,i)] = Math.random() < KEEP_PROB;
 
-  const cc = Math.floor(GRID_N/2);
-  vWall[vKey(cc,cc-1)] = false; vWall[vKey(cc,cc)] = false;
-  hWall[hKey(cc,cc-1)] = false; hWall[hKey(cc,cc)] = false;
+    const cc = Math.floor(GRID_N/2);
+    vWall[vKey(cc,cc-1)] = false; vWall[vKey(cc,cc)] = false;
+    hWall[hKey(cc,cc-1)] = false; hWall[hKey(cc,cc)] = false;
 
-  function neighborsOpen(ci,cj){
-    const res = [];
-    if(ci>0 && !vWall[vKey(ci,cj)]) res.push([ci-1,cj]);
-    if(ci<GRID_N-1 && !vWall[vKey(ci+1,cj)]) res.push([ci+1,cj]);
-    if(cj>0 && !hWall[hKey(cj,ci)]) res.push([ci,cj-1]);
-    if(cj<GRID_N-1 && !hWall[hKey(cj+1,ci)]) res.push([ci,cj+1]);
-    return res;
-  }
-  function bfsReachable(){
-    const seen = new Set();
-    seen.add(cc+'_'+cc);
-    const q = [[cc,cc]];
-    while(q.length){
-      const [ci,cj] = q.shift();
-      for(const n of neighborsOpen(ci,cj)){
-        const k = n[0]+'_'+n[1];
-        if(!seen.has(k)){ seen.add(k); q.push(n); }
-      }
+    function neighborsOpen(ci,cj){
+      const res = [];
+      if(ci>0 && !vWall[vKey(ci,cj)]) res.push([ci-1,cj]);
+      if(ci<GRID_N-1 && !vWall[vKey(ci+1,cj)]) res.push([ci+1,cj]);
+      if(cj>0 && !hWall[hKey(cj,ci)]) res.push([ci,cj-1]);
+      if(cj<GRID_N-1 && !hWall[hKey(cj+1,ci)]) res.push([ci,cj+1]);
+      return res;
     }
-    return seen;
-  }
-  for(let iter=0; iter<GRID_N*GRID_N+4; iter++){
-    const seen = bfsReachable();
-    if(seen.size >= GRID_N*GRID_N) break;
-    let opened = false;
-    for(let ci=0; ci<GRID_N && !opened; ci++){
-      for(let cj=0; cj<GRID_N && !opened; cj++){
-        if(seen.has(ci+'_'+cj)) continue;
-        if(ci>0 && seen.has((ci-1)+'_'+cj) && vWall[vKey(ci,cj)]){ vWall[vKey(ci,cj)]=false; opened=true; break; }
-        if(ci<GRID_N-1 && seen.has((ci+1)+'_'+cj) && vWall[vKey(ci+1,cj)]){ vWall[vKey(ci+1,cj)]=false; opened=true; break; }
-        if(cj>0 && seen.has(ci+'_'+(cj-1)) && hWall[hKey(cj,ci)]){ hWall[hKey(cj,ci)]=false; opened=true; break; }
-        if(cj<GRID_N-1 && seen.has(ci+'_'+(cj+1)) && hWall[hKey(cj+1,ci)]){ hWall[hKey(cj+1,ci)]=false; opened=true; break; }
+    function bfsReachable(){
+      const seen = new Set();
+      seen.add(cc+'_'+cc);
+      const q = [[cc,cc]];
+      while(q.length){
+        const [ci,cj] = q.shift();
+        for(const n of neighborsOpen(ci,cj)){
+          const k = n[0]+'_'+n[1];
+          if(!seen.has(k)){ seen.add(k); q.push(n); }
+        }
       }
+      return seen;
     }
-    if(!opened) break;
+    for(let iter=0; iter<GRID_N*GRID_N+4; iter++){
+      const seen = bfsReachable();
+      if(seen.size >= GRID_N*GRID_N) break;
+      let opened = false;
+      for(let ci=0; ci<GRID_N && !opened; ci++){
+        for(let cj=0; cj<GRID_N && !opened; cj++){
+          if(seen.has(ci+'_'+cj)) continue;
+          if(ci>0 && seen.has((ci-1)+'_'+cj) && vWall[vKey(ci,cj)]){ vWall[vKey(ci,cj)]=false; opened=true; break; }
+          if(ci<GRID_N-1 && seen.has((ci+1)+'_'+cj) && vWall[vKey(ci+1,cj)]){ vWall[vKey(ci+1,cj)]=false; opened=true; break; }
+          if(cj>0 && seen.has(ci+'_'+(cj-1)) && hWall[hKey(cj,ci)]){ hWall[hKey(cj,ci)]=false; opened=true; break; }
+          if(cj<GRID_N-1 && seen.has(ci+'_'+(cj+1)) && hWall[hKey(cj+1,ci)]){ hWall[hKey(cj+1,ci)]=false; opened=true; break; }
+        }
+      }
+      if(!opened) break;
+    }
   }
+
+  currentMazeData = { vWall, hWall };
 
   for(let i=1;i<GRID_N;i++){
     for(let j=0;j<GRID_N;j++){
@@ -795,7 +809,7 @@ function gpButtonPressed(i){
 }
 function gpButtonHeld(i){ return gp && gp.buttons[i] && gp.buttons[i].pressed; }
 
-const enemies = [];
+let enemies = [];
 
 function makeEnemy(ranged){
   const grp = new THREE.Group();
@@ -868,8 +882,8 @@ function damageEnemy(e, dmg){
   }
 }
 
-const projectiles = [];
-const effects = [];
+let projectiles = [];
+let effects = [];
 
 const shieldGeo = new THREE.SphereGeometry(1.15, 16, 12);
 const shieldMat = new THREE.MeshBasicMaterial({color:0x66d9ff, transparent:true, opacity:0.3, side:THREE.DoubleSide});
@@ -1924,6 +1938,139 @@ function togglePause(){
   if(paused && document.pointerLockElement) document.exitPointerLock();
 }
 
+/* =========================================
+   SAVE STATE / LOAD STATE LOGIC
+========================================= */
+function saveState() {
+  const data = {
+    state: state,
+    player: {
+      pos: { x: player.pos.x, y: player.pos.y, z: player.pos.z },
+      yaw: player.yaw, pitch: player.pitch,
+      hp: player.hp, maxHp: player.maxHp,
+      mana: player.mana, maxMana: player.maxMana,
+      stamina: player.stamina, maxStamina: player.maxStamina,
+      style: player.style, fpsSlot: player.fpsSlot, meleeSlot: player.meleeSlot,
+      arrowTypeIndex: player.arrowTypeIndex, rtSpellIndex: player.rtSpellIndex, ltSpellIndex: player.ltSpellIndex,
+      ammo: player.ammo, arrows: player.arrows, alive: player.alive
+    },
+    gameMode: gameMode,
+    maze: currentMazeData,
+    enemies: enemies.filter(e => e.alive).map(e => ({
+      x: e.mesh.position.x, y: e.mesh.position.y, z: e.mesh.position.z,
+      hp: e.hp, maxHp: e.maxHp, speed: e.speed, ranged: e.ranged,
+      attackCd: e.attackCd, preferredRange: e.preferredRange,
+      baseColorHex: e.baseColorHex, frozenTimer: e.frozenTimer,
+      stunTimer: e.stunTimer, dotTimer: e.dotTimer, dotDmg: e.dotDmg,
+      dotAcc: e.dotAcc, slowTimer: e.slowTimer, slowFactor: e.slowFactor
+    })),
+    unlocks: {
+      fps: FPS_WEAPONS.map(w => w.unlocked),
+      melee: MELEE_WEAPONS.map(w => w.unlocked),
+      arrows: ARROW_TYPES.map(w => w.unlocked),
+      rt: RT_SPELLS.map(w => w.unlocked),
+      lt: LT_SPELLS.map(w => w.unlocked)
+    }
+  };
+  localStorage.setItem('tf_savestate', JSON.stringify(data));
+  showMsg('GAME SAVED');
+  document.getElementById('loadStateBtn').style.display = 'inline-block';
+}
+
+function loadState() {
+  const savedStateStr = localStorage.getItem('tf_savestate');
+  if(!savedStateStr) return;
+  const data = JSON.parse(savedStateStr);
+
+  if(data.gameMode) {
+     gameMode = data.gameMode;
+     localStorage.setItem('tf_gamemode', gameMode);
+     buildModeButtons();
+  }
+
+  // Restore Game State Variables
+  Object.assign(state, data.state);
+
+  // Restore Player
+  player.pos.set(data.player.pos.x, data.player.pos.y, data.player.pos.z);
+  player.yaw = data.player.yaw;
+  player.pitch = data.player.pitch;
+  player.hp = data.player.hp;
+  player.maxHp = data.player.maxHp;
+  player.mana = data.player.mana;
+  player.maxMana = data.player.maxMana;
+  player.stamina = data.player.stamina;
+  player.maxStamina = data.player.maxStamina;
+  player.style = data.player.style;
+  player.fpsSlot = data.player.fpsSlot;
+  player.meleeSlot = data.player.meleeSlot;
+  player.arrowTypeIndex = data.player.arrowTypeIndex;
+  player.rtSpellIndex = data.player.rtSpellIndex;
+  player.ltSpellIndex = data.player.ltSpellIndex;
+  player.ammo = data.player.ammo || {};
+  player.arrows = data.player.arrows || 0;
+  player.alive = data.player.alive;
+  player.vy = 0; 
+  player.grounded = true; 
+
+  // Restore Unlocks
+  if(data.unlocks){
+      FPS_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.fps[i]);
+      MELEE_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.melee[i]);
+      ARROW_TYPES.forEach((w,i) => w.unlocked = data.unlocks.arrows[i]);
+      RT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.rt[i]);
+      LT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.lt[i]);
+  }
+
+  // Clear existing enemies from the scene
+  for(const e of enemies) { scene.remove(e.mesh); }
+  enemies = [];
+
+  // Restore Enemies
+  for(const ed of data.enemies) {
+    const mesh = makeEnemy(ed.ranged);
+    mesh.position.set(ed.x, ed.y, ed.z);
+    scene.add(mesh);
+    enemies.push({
+      mesh: mesh,
+      hp: ed.hp, maxHp: ed.maxHp, speed: ed.speed, ranged: ed.ranged,
+      attackCd: ed.attackCd, alive: true, preferredRange: ed.preferredRange,
+      baseColorHex: ed.baseColorHex, frozenTimer: ed.frozenTimer,
+      stunTimer: ed.stunTimer, dotTimer: ed.dotTimer, dotDmg: ed.dotDmg,
+      dotAcc: ed.dotAcc, slowTimer: ed.slowTimer, slowFactor: ed.slowFactor
+    });
+  }
+
+  // Clear active projectiles & effects to prevent glitches on load
+  for(const p of projectiles) { scene.remove(p.mesh); }
+  projectiles = [];
+  for(const fx of effects) { scene.remove(fx.mesh); }
+  effects = [];
+
+  // Re-generate maze from saved layout if past wave 1
+  if(state.wave > 1){
+      generateInteriorMaze(data.maze);
+      drawRadarBackground();
+  }
+
+  // Force camera update
+  camera.position.copy(player.pos);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = player.yaw;
+  camera.rotation.x = player.pitch;
+
+  // Jump into the game
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('pauseOverlay').classList.add('hidden');
+  gameStarted = true;
+  paused = false;
+
+  updateHudStyle();
+  if(!touchControlsEnabled && canvas.requestPointerLock) canvas.requestPointerLock();
+  showMsg('STATE LOADED');
+}
+
+
 let lastT = performance.now();
 let primaryHeldPrev = false, secondaryHeldPrev = false;
 
@@ -2030,6 +2177,16 @@ function enterArena(useTouch){
   startWave();
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
+
+// Bind the new Save/Load buttons
+document.getElementById('saveStateBtn').addEventListener('click', saveState);
+document.getElementById('loadStateBtn').addEventListener('click', loadState);
+
+// Check if a save exists on load to show the button
+if (localStorage.getItem('tf_savestate')) {
+  document.getElementById('loadStateBtn').style.display = 'inline-block';
+}
+
 document.getElementById('startBtn').addEventListener('touchend', e=>{
   e.preventDefault();
   enterArena(true);
