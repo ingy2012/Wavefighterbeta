@@ -1952,10 +1952,7 @@ function saveState() {
       stamina: player.stamina, maxStamina: player.maxStamina,
       style: player.style, fpsSlot: player.fpsSlot, meleeSlot: player.meleeSlot,
       arrowTypeIndex: player.arrowTypeIndex, rtSpellIndex: player.rtSpellIndex, ltSpellIndex: player.ltSpellIndex,
-      // Fixed: deep copy ammo object and add reloading variables
-      ammo: JSON.parse(JSON.stringify(player.ammo)), 
-      arrows: player.arrows, alive: player.alive, shieldTimer: player.shieldTimer,
-      reloading: player.reloading, reloadTimer: player.reloadTimer, reloadingWeapon: player.reloadingWeapon
+      ammo: player.ammo, arrows: player.arrows, alive: player.alive
     },
     gameMode: gameMode,
     maze: currentMazeData,
@@ -2010,28 +2007,11 @@ function loadState() {
   player.arrowTypeIndex = data.player.arrowTypeIndex;
   player.rtSpellIndex = data.player.rtSpellIndex;
   player.ltSpellIndex = data.player.ltSpellIndex;
+  player.ammo = data.player.ammo || {};
+  player.arrows = data.player.arrows || 0;
   player.alive = data.player.alive;
   player.vy = 0; 
-  player.grounded = true;
-  player.shieldTimer = data.player.shieldTimer || 0;
-  
-  // Restore Ammo properly! Uses JSON.parse to clone the object into memory safely.
-  if (data.player.ammo) {
-    player.ammo = JSON.parse(JSON.stringify(data.player.ammo));
-  } else {
-    player.ammo = {};
-  }
-  
-  if (data.player.arrows !== undefined) {
-      player.arrows = data.player.arrows;
-  } else {
-      player.arrows = 0;
-  }
-
-  // Restore active reload states so players don't get stuck with a broken gun mid-reload
-  player.reloading = data.player.reloading || false;
-  player.reloadTimer = data.player.reloadTimer || 0;
-  player.reloadingWeapon = data.player.reloadingWeapon || null;
+  player.grounded = true; 
 
   // Restore Unlocks
   if(data.unlocks){
