@@ -275,7 +275,7 @@
       <div id="shopMeleeList"></div>
     </div>
     <div class="shopCat">
-      <h3>MAGIC SPELLS</h3>
+      <h3>MAGIC &amp; SUPPLIES</h3>
       <div id="shopMagicList"></div>
     </div>
   </div>
@@ -892,7 +892,7 @@ function closeSettings(){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('settingsOverlay').classList.add('hidden');
   if(settingsReturnTo==='pause') document.getElementById('pauseOverlay').classList.remove('hidden');
-  else document.getElementById('startOverlay').classList.remove('hidden');
+  else document.getElementById('startOverlay').classList.add('hidden');
 }
 
 const keys = {};
@@ -965,17 +965,48 @@ function gpButtonHeld(i){ return gp && gp.buttons[i] && gp.buttons[i].pressed; }
 
 let enemies = [];
 
+/* =========================================================
+   MANNEQUIN ENEMY GENERATOR
+========================================================= */
 function makeEnemy(ranged){
   const grp = new THREE.Group();
-  const baseHex = ranged?0x9b3bdd:0xdd3b3b;
-  const mat = new THREE.MeshStandardMaterial({color:baseHex, emissive: ranged?0x220033:0x330000});
-  const bodyGeo = new THREE.CylinderGeometry(0.5,0.6,1.4,10);
-  const body = new THREE.Mesh(bodyGeo, mat);
-  body.position.y = 0.9; body.castShadow=true;
-  const headGeo = new THREE.SphereGeometry(0.42,10,10);
-  const head = new THREE.Mesh(headGeo, mat);
-  head.position.y = 1.85; head.castShadow=true;
-  grp.add(body, head);
+  const baseHex = ranged ? 0x9b3bdd : 0xdd3b3b;
+  const mat = new THREE.MeshStandardMaterial({color: baseHex, emissive: ranged ? 0x220033 : 0x330000});
+
+  // Torso
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.3), mat);
+  torso.position.y = 1.05; torso.castShadow = true;
+  torso.userData = { partType: 'body' };
+
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 10), mat);
+  head.position.y = 1.62; head.castShadow = true;
+  head.userData = { partType: 'head' };
+
+  // Left Arm
+  const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
+  leftArm.position.set(-0.35, 1.05, 0); leftArm.castShadow = true;
+  leftArm.userData = { partType: 'limb' };
+
+  // Right Arm
+  const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
+  rightArm.position.set(0.35, 1.05, 0); rightArm.castShadow = true;
+  rightArm.userData = { partType: 'limb' };
+
+  // Left Leg
+  const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
+  leftLeg.position.set(-0.15, 0.35, 0); leftLeg.castShadow = true;
+  leftLeg.userData = { partType: 'limb' };
+
+  // Right Leg
+  const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
+  rightLeg.position.set(0.15, 0.35, 0); rightLeg.castShadow = true;
+  rightLeg.userData = { partType: 'limb' };
+
+  grp.add(torso, head, leftArm, rightArm, leftLeg, rightLeg);
+
+  // Store reference materials to all sub-meshes for flash effects
+  grp.userData.parts = [torso, head, leftArm, rightArm, leftLeg, rightLeg];
   grp.userData.mat = mat;
   return grp;
 }
@@ -1021,11 +1052,29 @@ function spawnWaveEnemies(){
   }
 }
 
-function damageEnemy(e, dmg){
+function damageEnemy(e, baseDmg, hitPartType){
   if(!e.alive) return;
-  e.hp -= dmg;
-  e.mesh.userData.mat.emissive.setHex(0xffffff);
-  setTimeout(()=>{ if(e.mesh.userData.mat) e.mesh.userData.mat.emissive.setHex(e.ranged?0x220033:0x330000); }, 90);
+  
+  // Calculate multiplier: Headshot = 2x, Body = 1x, Limbs = 0.6x
+  let multiplier = 1.0;
+  if(hitPartType === 'head') { multiplier = 2.0; showMsg('HEADSHOT! 2x'); }
+  else if(hitPartType === 'limb') { multiplier = 0.6; }
+
+  const finalDmg = baseDmg * multiplier;
+  e.hp -= finalDmg;
+
+  // Flash white on hit
+  for(const part of e.mesh.userData.parts){
+    part.material.emissive.setHex(0xffffff);
+  }
+  setTimeout(()=>{ 
+    if(e.mesh.userData.parts){
+      for(const part of e.mesh.userData.parts){
+        part.material.emissive.setHex(e.ranged?0x220033:0x330000);
+      }
+    }
+  }, 90);
+
   if(e.hp <= 0 && e.alive){
     e.alive = false;
     scene.remove(e.mesh);
@@ -1073,7 +1122,7 @@ function fireArrow(damage){
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(40), dmg:damage, friendly:true, life:2.5, splash:0,
-    onHit:(e)=>{
+    onHit:(e, hitPart)=>{
       if(type.dot){ e.dotTimer=type.dot.time; e.dotDmg=type.dot.dmg; e.dotAcc=0; }
       if(type.slow){ e.slowTimer=type.slow.time; e.slowFactor=type.slow.factor; }
     }});
@@ -1096,7 +1145,8 @@ function fireFlameStream(){
     const hitMesh = hits[0].object;
     const e = enemies.find(en=>en.alive && (en.mesh===hitMesh.parent || en.mesh===hitMesh));
     if(e){
-      damageEnemy(e, 2.5);
+      const partType = hitMesh.userData?.partType || 'body';
+      damageEnemy(e, 2.5, partType);
       e.dotTimer = 2.0; e.dotDmg = 2; e.dotAcc = 0;
     }
   }
@@ -1121,7 +1171,7 @@ function fireIceSpikeCharged(frac){
   mesh.scale.setScalar(0.7+frac*0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
-    onHit:(e)=>{
+    onHit:(e, hitPart)=>{
       if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
       else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
@@ -1159,7 +1209,8 @@ function fireLightningCharged(frac){
   const hitSet = new Set();
   for(let chain=0; chain<=spell.maxChain; chain++){
     if(!current || !current.alive) break;
-    damageEnemy(current, dmg);
+    const partType = hitMesh.userData?.partType || 'body';
+    damageEnemy(current, dmg, partType);
     current.stunTimer = Math.max(current.stunTimer, spell.stunTime);
     hitSet.add(current);
     points.push(current.mesh.position.clone().setY(1));
@@ -1537,7 +1588,7 @@ function tryShout(){
   for(const e of enemies){
     if(!e.alive) continue;
     const d = e.mesh.position.distanceTo(player.pos);
-    if(d < 8) damageEnemy(e, 55);
+    if(d < 8) damageEnemy(e, 55, 'body');
   }
 }
 
@@ -1567,12 +1618,22 @@ function hitscanShoot(dmg, spreadAmt){
   }
   raycaster.set(player.pos.clone(), d);
   raycaster.far = 100;
-  const targets = wallMeshes.concat(enemies.filter(e=>e.alive).map(e=>e.mesh));
+  
+  // Collect all parts of all enemies to allow precise body-part raycasting
+  const enemyPartMeshes = [];
+  for(const en of enemies){
+    if(en.alive) enemyPartMeshes.push(...en.mesh.userData.parts);
+  }
+  const targets = wallMeshes.concat(enemyPartMeshes);
   const hits = raycaster.intersectObjects(targets, true);
+
   if(hits.length){
     const hitMesh = hits[0].object;
-    const e = enemies.find(en=>en.alive && (en.mesh===hitMesh.parent || en.mesh===hitMesh));
-    if(e) damageEnemy(e, dmg);
+    const e = enemies.find(en => en.alive && (en.mesh === hitMesh.parent || en.mesh === hitMesh));
+    if(e){
+      const partType = hitMesh.userData?.partType || 'body';
+      damageEnemy(e, dmg, partType);
+    }
   }
 }
 function doPrimary(){
@@ -1612,7 +1673,7 @@ function doPrimary(){
         const dist = toE.length();
         if(dist < w.range){
           toE.normalize();
-          if(toE.dot(dir) > w.angle) damageEnemy(e, w.dmg);
+          if(toE.dot(dir) > w.angle) damageEnemy(e, w.dmg, 'body');
         }
       }
       flashScreen('255,255,255', 0.06);
@@ -1664,7 +1725,7 @@ function castLTSpell(){
       if(!e.alive) continue;
       const d = e.mesh.position.distanceTo(player.pos);
       if(d < spell.radius){
-        damageEnemy(e, spell.dmg);
+        damageEnemy(e, spell.dmg, 'body');
         e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
         
@@ -1807,7 +1868,7 @@ function updateEnemies(dt){
     e.slowTimer = Math.max(0, e.slowTimer-dt);
     if(e.dotTimer>0){
       e.dotTimer -= dt; e.dotAcc += dt;
-      if(e.dotAcc>=1){ e.dotAcc-=1; damageEnemy(e, e.dotDmg); }
+      if(e.dotAcc>=1){ e.dotAcc-=1; damageEnemy(e, e.dotDmg, 'body'); }
     }
     if(!e.alive) continue;
     const disabled = e.frozenTimer>0 || e.stunTimer>0;
@@ -1837,10 +1898,11 @@ function updateEnemies(dt){
       resolveWallCollision(e.mesh.position, 0.6);
     }
     e.mesh.lookAt(player.pos.x, e.mesh.position.y, player.pos.z);
-    if(e.frozenTimer>0) e.mesh.userData.mat.color.setHex(0x2a6fdd);
-    else if(e.dotTimer>0) e.mesh.userData.mat.color.setHex(0x66ff66);
-    else if(e.slowTimer>0) e.mesh.userData.mat.color.setHex(0xaee8ff);
-    else e.mesh.userData.mat.color.setHex(e.baseColorHex);
+    
+    const colHex = e.frozenTimer>0 ? 0x2a6fdd : (e.dotTimer>0 ? 0x66ff66 : (e.slowTimer>0 ? 0xaee8ff : e.baseColorHex));
+    for(const part of e.mesh.userData.parts){
+      part.material.color.setHex(colHex);
+    }
   }
 }
 
@@ -1855,12 +1917,12 @@ function updateProjectiles(dt){
       for(const e of enemies){
         if(!e.alive) continue;
         if(p.mesh.position.distanceTo(e.mesh.position.clone().setY(1)) < 0.9){
-          damageEnemy(e, p.dmg);
+          damageEnemy(e, p.dmg, 'body');
           if(p.onHit) p.onHit(e);
           if(p.splash>0){
             for(const e2 of enemies){
               if(!e2.alive || e2===e) continue;
-              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) damageEnemy(e2, p.dmg*0.5);
+              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) damageEnemy(e2, p.dmg*0.5, 'body');
             }
           }
           remove = true; break;
@@ -1965,13 +2027,8 @@ function updateResources(dt){
   updateAmmoState(dt);
 }
 
-/* =========================================================
-   UPDATE VIEWMODEL ANIMATIONS (WITH PORTRAIT RESPONSIVENESS)
-========================================================= */
 function updateViewmodelAnimations(now) {
   const isPortrait = innerHeight > innerWidth;
-
-  // Set base positional offsets depending on orientation so weapons stay nicely framed on mobile portrait screens
   let baseX = isPortrait ? 0.18 : 0.3;
   let baseZ = isPortrait ? -0.45 : -0.5;
 
@@ -2036,7 +2093,6 @@ function updateViewmodelAnimations(now) {
       vmClaymore.rotation.set(0.5 - (swing * 1.5), -0.2 + (swing * 1.0), -0.3 - (swing * 1.0));
       
     } else {
-      // Short Sword and Shield
       let swing = player.cooldowns.primary > 0 ? (player.cooldowns.primary / w.cd) : 0;
       const shield = vmSwordShield.children[1];
       const sword = vmSwordShield.children[0];
@@ -2141,6 +2197,27 @@ function buildShopUI(){
     item.appendChild(btn);
     magicList.appendChild(item);
   });
+
+  // HEALTH PACK SHOP ITEM
+  const hpItem = document.createElement('div');
+  hpItem.className = 'shopItem';
+  const canAffordHp = state.score >= 50 && player.hp < player.maxHp;
+  hpItem.innerHTML = `<div><span class="itemTitle">Health Pack (+50 HP)</span><span class="itemSub">50 PTS</span></div>`;
+  const hpBtn = document.createElement('button');
+  hpBtn.className = 'shopBuyBtn' + (!canAffordHp ? ' cant' : '');
+  hpBtn.textContent = player.hp >= player.maxHp ? 'FULL HP' : 'BUY';
+  if(player.hp < player.maxHp){
+    hpBtn.addEventListener('click', ()=>{
+      if(state.score >= 50){
+        state.score -= 50;
+        player.hp = Math.min(player.maxHp, player.hp + 50);
+        showMsg('HEALTH RESTORED');
+        buildShopUI();
+      }
+    });
+  }
+  hpItem.appendChild(hpBtn);
+  magicList.appendChild(hpItem);
 }
 
 function startWave(){
@@ -2453,7 +2530,7 @@ document.getElementById('resumeBtn').addEventListener('click', ()=>{
 document.getElementById('startSettingsBtn').addEventListener('click', ()=>openSettings('start'));
 document.getElementById('pauseSettingsBtn').addEventListener('click', ()=>openSettings('pause'));
 document.getElementById('settingsBackBtn').addEventListener('click', closeSettings);
-document.getElementById('resetBindsBtn', ()=>{
+document.getElementById('resetBindsBtn').addEventListener('click', ()=>{
   keyBindings = Object.assign({}, DEFAULT_KEY_BINDINGS);
   gpBindings = Object.assign({}, DEFAULT_GP_BINDINGS);
   saveKeyBindings(); saveGpBindings();
