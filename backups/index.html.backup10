@@ -357,100 +357,6 @@ viewLight.position.set(0, 0, 0);
 camera.add(viewLight);
 
 /* =========================================================
-   90s FUTURISTIC HOUSE / TECHNO MUSIC SYNTHESIZER
-========================================================= */
-let audioCtx = null;
-let musicInterval = null;
-let musicStarted = false;
-
-function initMusicSynth() {
-  if (audioCtx) return;
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  audioCtx = new AudioContext();
-}
-
-function startBackgroundMusic() {
-  initMusicSynth();
-  if (!audioCtx) return;
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  if (musicStarted) return;
-  musicStarted = true;
-
-  // 90s Rush-2 style upbeat techno progression in A minor (A, F, C, G)
-  const bassNotes = [110, 110, 87.31, 87.31, 130.81, 130.81, 98.00, 98.00]; 
-  const leadMelody = [440, 523.25, 659.25, 523.25, 587.33, 659.25, 783.99, 659.25];
-  let step = 0;
-  const bpm = 138; // Driving fast 90s arcade techno tempo
-  const stepTime = (60 / bpm) / 2; // 16th notes feel
-
-  musicInterval = setInterval(() => {
-    if (!gameStarted || paused || !player.alive) return;
-    const now = audioCtx.currentTime;
-
-    // 1. Driving Kick Drum on every quarter note (beats 0, 4, 8, 12)
-    if (step % 4 === 0) {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.frequency.setValueAtTime(140, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.08);
-      gain.gain.setValueAtTime(0.7, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(now); osc.stop(now + 0.18);
-    }
-
-    // 2. Crisp techno hi-hat on every off-beat (2, 6, 10, 14)
-    if (step % 4 === 2) {
-      const bufferSize = audioCtx.sampleRate * 0.04;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buffer;
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'highpass'; filter.frequency.value = 7000;
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-      noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-      noise.start(now); noise.stop(now + 0.04);
-    }
-
-    // 3. Pumping 90s Synth Bassline (Sawtooth wave with filter envelope)
-    const bFreq = bassNotes[Math.floor(step / 2) % bassNotes.length];
-    const bass = audioCtx.createOscillator();
-    bass.type = 'sawtooth';
-    bass.frequency.setValueAtTime(bFreq, now);
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(800, now);
-    filter.frequency.exponentialRampToValueAtTime(200, now + stepTime);
-    const bassGain = audioCtx.createGain();
-    bassGain.gain.setValueAtTime(0.25, now);
-    bassGain.gain.exponentialRampToValueAtTime(0.01, now + stepTime);
-    bass.connect(filter); filter.connect(bassGain); bassGain.connect(audioCtx.destination);
-    bass.start(now); bass.stop(now + stepTime);
-
-    // 4. Bright Arcade Synth Lead melody hits
-    if (step % 2 === 0) {
-      const lFreq = leadMelody[(step / 2) % leadMelody.length];
-      const lead = audioCtx.createOscillator();
-      lead.type = 'square';
-      lead.frequency.setValueAtTime(lFreq, now);
-      const leadGain = audioCtx.createGain();
-      leadGain.gain.setValueAtTime(0.1, now);
-      leadGain.gain.exponentialRampToValueAtTime(0.001, now + stepTime * 1.5);
-      lead.connect(leadGain); leadGain.connect(audioCtx.destination);
-      lead.start(now); lead.stop(now + stepTime * 1.5);
-    }
-
-    step = (step + 1) % 16;
-  }, stepTime * 1000);
-}
-
-/* =========================================================
    VIEWMODEL SYSTEM (Weapons rendered on screen)
 ========================================================= */
 const viewmodelGroup = new THREE.Group();
@@ -986,7 +892,7 @@ function closeSettings(){
   listeningForKey = null; listeningForGamepad = null;
   document.getElementById('settingsOverlay').classList.add('hidden');
   if(settingsReturnTo==='pause') document.getElementById('pauseOverlay').classList.remove('hidden');
-  else document.getElementById('startOverlay').classList.remove('hidden');
+  else document.getElementById('startOverlay').classList.add('hidden');
 }
 
 const keys = {};
@@ -1059,36 +965,47 @@ function gpButtonHeld(i){ return gp && gp.buttons[i] && gp.buttons[i].pressed; }
 
 let enemies = [];
 
+/* =========================================================
+   MANNEQUIN ENEMY GENERATOR
+========================================================= */
 function makeEnemy(ranged){
   const grp = new THREE.Group();
   const baseHex = ranged ? 0x9b3bdd : 0xdd3b3b;
   const mat = new THREE.MeshStandardMaterial({color: baseHex, emissive: ranged ? 0x220033 : 0x330000});
 
+  // Torso
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.3), mat);
   torso.position.y = 1.05; torso.castShadow = true;
   torso.userData = { partType: 'body' };
 
+  // Head
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 10), mat);
   head.position.y = 1.62; head.castShadow = true;
   head.userData = { partType: 'head' };
 
+  // Left Arm
   const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
   leftArm.position.set(-0.35, 1.05, 0); leftArm.castShadow = true;
   leftArm.userData = { partType: 'limb' };
 
+  // Right Arm
   const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
   rightArm.position.set(0.35, 1.05, 0); rightArm.castShadow = true;
   rightArm.userData = { partType: 'limb' };
 
+  // Left Leg
   const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
   leftLeg.position.set(-0.15, 0.35, 0); leftLeg.castShadow = true;
   leftLeg.userData = { partType: 'limb' };
 
+  // Right Leg
   const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
   rightLeg.position.set(0.15, 0.35, 0); rightLeg.castShadow = true;
   rightLeg.userData = { partType: 'limb' };
 
   grp.add(torso, head, leftArm, rightArm, leftLeg, rightLeg);
+
+  // Store reference materials to all sub-meshes for flash effects
   grp.userData.parts = [torso, head, leftArm, rightArm, leftLeg, rightLeg];
   grp.userData.mat = mat;
   return grp;
@@ -1137,6 +1054,8 @@ function spawnWaveEnemies(){
 
 function damageEnemy(e, baseDmg, hitPartType){
   if(!e.alive) return;
+  
+  // Calculate multiplier: Headshot = 2x, Body = 1x, Limbs = 0.6x
   let multiplier = 1.0;
   if(hitPartType === 'head') { multiplier = 2.0; showMsg('HEADSHOT! 2x'); }
   else if(hitPartType === 'limb') { multiplier = 0.6; }
@@ -1144,6 +1063,7 @@ function damageEnemy(e, baseDmg, hitPartType){
   const finalDmg = baseDmg * multiplier;
   e.hp -= finalDmg;
 
+  // Flash white on hit
   for(const part of e.mesh.userData.parts){
     part.material.emissive.setHex(0xffffff);
   }
@@ -1202,7 +1122,7 @@ function fireArrow(damage){
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(40), dmg:damage, friendly:true, life:2.5, splash:0,
-    onHit:(e)=>{
+    onHit:(e, hitPart)=>{
       if(type.dot){ e.dotTimer=type.dot.time; e.dotDmg=type.dot.dmg; e.dotAcc=0; }
       if(type.slow){ e.slowTimer=type.slow.time; e.slowFactor=type.slow.factor; }
     }});
@@ -1219,9 +1139,7 @@ function fireFlameStream(){
   const dir = getForward();
   raycaster.set(player.pos.clone(), dir);
   raycaster.far = 12;
-  const enemyPartMeshes = [];
-  for(const en of enemies){ if(en.alive) enemyPartMeshes.push(...en.mesh.userData.parts); }
-  const targets = wallMeshes.concat(enemyPartMeshes);
+  const targets = wallMeshes.concat(enemies.filter(e=>e.alive).map(e=>e.mesh));
   const hits = raycaster.intersectObjects(targets, true);
   if(hits.length){
     const hitMesh = hits[0].object;
@@ -1253,7 +1171,7 @@ function fireIceSpikeCharged(frac){
   mesh.scale.setScalar(0.7+frac*0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
-    onHit:(e)=>{
+    onHit:(e, hitPart)=>{
       if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
       else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
@@ -1281,9 +1199,7 @@ function fireLightningCharged(frac){
   const origin = player.pos.clone();
   raycaster.set(origin, dir);
   raycaster.far = 60;
-  const enemyPartMeshes = [];
-  for(const en of enemies){ if(en.alive) enemyPartMeshes.push(...en.mesh.userData.parts); }
-  const targets = wallMeshes.concat(enemyPartMeshes);
+  const targets = wallMeshes.concat(enemies.filter(e=>e.alive).map(e=>e.mesh));
   const hits = raycaster.intersectObjects(targets, true);
   if(!hits.length){ showMsg('MISS'); return; }
   const hitMesh = hits[0].object;
@@ -1703,8 +1619,11 @@ function hitscanShoot(dmg, spreadAmt){
   raycaster.set(player.pos.clone(), d);
   raycaster.far = 100;
   
+  // Collect all parts of all enemies to allow precise body-part raycasting
   const enemyPartMeshes = [];
-  for(const en of enemies){ if(en.alive) enemyPartMeshes.push(...en.mesh.userData.parts); }
+  for(const en of enemies){
+    if(en.alive) enemyPartMeshes.push(...en.mesh.userData.parts);
+  }
   const targets = wallMeshes.concat(enemyPartMeshes);
   const hits = raycaster.intersectObjects(targets, true);
 
@@ -2585,7 +2504,6 @@ function enterArena(useTouch){
   gameStarted = true;
   updateHudStyle();
   startWave();
-  startBackgroundMusic(); // Kicks off the 90s techno synth music!
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
 
