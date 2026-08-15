@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Wavefighter</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Segoe UI',Arial,sans-serif;user-select:none;-webkit-user-select:none;}
   #c{display:block;width:100vw;height:100vh;}
@@ -47,6 +48,7 @@
   button.big{background:linear-gradient(135deg,#ff8a3b,#ff3b6b);border:none;color:#fff;font-size:16px;font-weight:700;letter-spacing:2px;padding:12px 36px;border-radius:24px;cursor:pointer;box-shadow:0 4px 20px rgba(255,80,80,.4);}
   button.big:active{transform:scale(.96);}
   #statLine{margin-top:12px;font-size:13px;opacity:.8;}
+  .mp-status{font-size:13px;opacity:.85;min-height:18px;}
   .hidden{display:none !important;}
   #stateTag{font-size:11px;font-weight:700;letter-spacing:1px;margin-top:4px;padding:2px 8px;border-radius:6px;display:inline-block;}
   #stateTag.zoom{background:rgba(59,167,255,.35);color:#bfe6ff;}
@@ -253,11 +255,60 @@
 
   <div style="display:flex; gap:12px; justify-content:center;">
     <button class="big" id="startBtn">ENTER ARENA</button>
+    <button class="big" id="mpMenuBtn" style="background:linear-gradient(135deg,#66d9ff,#b93bff);">MULTIPLAYER</button>
     <button class="big" id="loadStateBtn" style="display:none; background:linear-gradient(135deg,#3ba7ff,#3bffd8); color:#000;">LOAD STATE</button>
   </div>
   
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
+</div>
+
+<!-- MULTIPLAYER LOBBY OVERLAY -->
+<div class="overlay hidden" id="mpOverlay">
+  <h1 style="font-size:28px;">MULTIPLAYER</h1>
+
+  <div id="mpModeSelect" style="max-width:360px;width:100%;">
+    <div style="margin-bottom:16px;">
+      <div class="label" style="text-align:left;margin-bottom:4px;">YOUR NAME</div>
+      <input id="mpNameInput" type="text" maxlength="16" placeholder="Player" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-size:14px;box-sizing:border-box;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="big" id="mpHostBtn" style="background:linear-gradient(135deg,#66d9ff,#3ba7ff);">HOST GAME</button>
+      <button class="big" id="mpJoinBtn" style="background:linear-gradient(135deg,#b93bff,#ff3b6b);">JOIN GAME</button>
+      <button class="big" id="mpBackBtn" style="background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">BACK</button>
+    </div>
+  </div>
+
+  <div id="mpHostPanel" class="hidden" style="max-width:360px;width:100%;">
+    <div style="font-size:12px;opacity:.75;letter-spacing:1px;margin-bottom:6px;">ROOM CODE &mdash; SHARE WITH PLAYER 2</div>
+    <div id="mpRoomCode" title="Click to copy" style="cursor:pointer;font-size:44px;font-weight:800;letter-spacing:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 10px;margin-bottom:12px;">----</div>
+    <div id="mpHostStatus" class="mp-status">Connecting to relay server...</div>
+    <button class="big" id="mpHostCancelBtn" style="margin-top:16px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">CANCEL</button>
+  </div>
+
+  <div id="mpJoinPanel" class="hidden" style="max-width:360px;width:100%;">
+    <div class="label" style="text-align:left;margin-bottom:4px;">ROOM CODE</div>
+    <input id="mpJoinCodeInput" type="text" maxlength="4" placeholder="ABCD" style="width:100%;text-align:center;text-transform:uppercase;font-size:28px;letter-spacing:8px;font-weight:800;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;box-sizing:border-box;">
+    <button class="big" id="mpJoinConnectBtn" style="margin-top:14px;background:linear-gradient(135deg,#b93bff,#ff3b6b);">CONNECT</button>
+    <div id="mpJoinStatus" class="mp-status" style="margin-top:10px;">Enter the room code from Player 1.</div>
+    <button class="big" id="mpJoinCancelBtn" style="margin-top:16px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">CANCEL</button>
+  </div>
+
+  <div id="mpLobbyPanel" class="hidden" style="max-width:360px;width:100%;">
+    <div id="mpLobbyStatus" class="mp-status" style="font-size:15px;margin-bottom:16px;">Connected!</div>
+    <button class="big" id="mpStartBtn" style="background:linear-gradient(135deg,#ff8a3b,#ff3b6b);">START GAME</button>
+    <div><button class="big" id="mpLobbyLeaveBtn" style="margin-top:16px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">LEAVE</button></div>
+  </div>
+</div>
+
+<!-- JOIN REQUEST BANNER (host sees this when a player tries to connect) -->
+<div class="hidden" id="mpJoinRequestBanner" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(10,14,24,.96);border:1px solid rgba(102,217,255,.5);border-radius:14px;padding:16px 20px;text-align:center;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.5);color:#eee;">
+  <div style="font-size:13px;opacity:.8;letter-spacing:1px;margin-bottom:6px;">JOIN REQUEST</div>
+  <div style="font-size:16px;font-weight:700;margin-bottom:12px;"><span id="mpJoinRequestName">A player</span> wants to join</div>
+  <div style="display:flex;gap:10px;justify-content:center;">
+    <button class="big" id="mpAcceptBtn" style="font-size:13px;padding:8px 22px;background:linear-gradient(135deg,#8cff3b,#3bffd8);color:#000;">ACCEPT</button>
+    <button class="big" id="mpDeclineBtn" style="font-size:13px;padding:8px 22px;background:linear-gradient(135deg,#555,#333);">DECLINE</button>
+  </div>
 </div>
 
 <!-- SHOP / PROGRESSION OVERLAY -->
@@ -382,14 +433,14 @@ function startBackgroundMusic() {
   const bassNotes = [110, 110, 87.31, 87.31, 130.81, 130.81, 98.00, 98.00]; 
   const leadMelody = [440, 523.25, 659.25, 523.25, 587.33, 659.25, 783.99, 659.25];
   let step = 0;
-  const bpm = 138;
-  const stepTime = (60 / bpm) / 2;
+  const bpm = 138; // Driving fast 90s arcade techno tempo
+  const stepTime = (60 / bpm) / 2; // 16th notes feel
 
   musicInterval = setInterval(() => {
     if (!gameStarted || paused || !player.alive) return;
     const now = audioCtx.currentTime;
 
-    // 1. Kick Drum
+    // 1. Driving Kick Drum on every quarter note (beats 0, 4, 8, 12)
     if (step % 4 === 0) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -401,7 +452,7 @@ function startBackgroundMusic() {
       osc.start(now); osc.stop(now + 0.18);
     }
 
-    // 2. Hi-hat
+    // 2. Crisp techno hi-hat on every off-beat (2, 6, 10, 14)
     if (step % 4 === 2) {
       const bufferSize = audioCtx.sampleRate * 0.04;
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -418,7 +469,7 @@ function startBackgroundMusic() {
       noise.start(now); noise.stop(now + 0.04);
     }
 
-    // 3. Bassline
+    // 3. Pumping 90s Synth Bassline (Sawtooth wave with filter envelope)
     const bFreq = bassNotes[Math.floor(step / 2) % bassNotes.length];
     const bass = audioCtx.createOscillator();
     bass.type = 'sawtooth';
@@ -433,7 +484,7 @@ function startBackgroundMusic() {
     bass.connect(filter); filter.connect(bassGain); bassGain.connect(audioCtx.destination);
     bass.start(now); bass.stop(now + stepTime);
 
-    // 4. Synth Lead
+    // 4. Bright Arcade Synth Lead melody hits
     if (step % 2 === 0) {
       const lFreq = leadMelody[(step / 2) % leadMelody.length];
       const lead = audioCtx.createOscillator();
@@ -464,6 +515,7 @@ const matWood = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.9,
 const matMagicLT = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.8, ...matOpts});
 const matMagicRT = new THREE.MeshBasicMaterial({color: 0xff6a2b, transparent: true, opacity: 0.8, ...matOpts});
 
+// 1. Standard Gun Viewmodel (Assault Rifle, Flame, Rocket)
 const vmStdGun = new THREE.Group();
 const stdBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), matGunGrey);
 stdBarrel.rotation.x = Math.PI / 2;
@@ -473,12 +525,14 @@ stdBody.position.set(0, -0.05, 0);
 vmStdGun.add(stdBarrel, stdBody);
 viewmodelGroup.add(vmStdGun);
 
+// 2. Dual Guns Viewmodel (Pistols)
 const vmDualGuns = new THREE.Group();
 const leftGun = vmStdGun.clone();
 const rightGun = vmStdGun.clone();
 vmDualGuns.add(leftGun, rightGun);
 viewmodelGroup.add(vmDualGuns);
 
+// 3. Sniper Rifle Viewmodel
 const vmSniper = new THREE.Group();
 const sniperBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.4), matGunDark);
 sniperBody.position.set(0, -0.05, 0);
@@ -493,6 +547,7 @@ scopeTube.position.set(0, 0.08, -0.05);
 vmSniper.add(sniperBody, sniperBarrel, scopeMount, scopeTube);
 viewmodelGroup.add(vmSniper);
 
+// 4. Shotgun Viewmodel
 const vmShotgun = new THREE.Group();
 const sgBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.3), matGunDark);
 sgBody.position.set(0, -0.05, 0);
@@ -507,6 +562,7 @@ sgPump.position.set(0, -0.02, -0.25);
 vmShotgun.add(sgBody, sgBarrelL, sgBarrelR, sgPump);
 viewmodelGroup.add(vmShotgun);
 
+// 5. Sword & Shield
 const vmSwordShield = new THREE.Group();
 const smallSword = new THREE.Group();
 const ssBlade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.015), matSteel);
@@ -521,6 +577,7 @@ shieldMeshVM.rotation.x = Math.PI / 2;
 vmSwordShield.add(smallSword, shieldMeshVM);
 viewmodelGroup.add(vmSwordShield);
 
+// 6. Claymore
 const vmClaymore = new THREE.Group();
 const clayBlade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.02), matSteel);
 clayBlade.position.set(0, 0.45, 0);
@@ -530,6 +587,7 @@ clayHandle.position.set(0, -0.125, 0);
 vmClaymore.add(clayBlade, clayGuard, clayHandle);
 viewmodelGroup.add(vmClaymore);
 
+// 7. Spear
 const vmSpear = new THREE.Group();
 const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.8, 8), matWood);
 spearShaft.position.set(0, 0, 0);
@@ -538,12 +596,14 @@ spearTip.position.set(0, 0.9 + 0.175, 0);
 vmSpear.add(spearShaft, spearTip);
 viewmodelGroup.add(vmSpear);
 
+// 8. Bow Viewmodel
 const vmBow = new THREE.Group();
 const bowCurve = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.03, 8, 16, Math.PI), matWood);
 bowCurve.rotation.z = Math.PI/2;
 vmBow.add(bowCurve);
 viewmodelGroup.add(vmBow);
 
+// 9. Magic Hands/Orbs
 const vmMagic = new THREE.Group();
 const magicOrbRT = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), matMagicRT);
 const magicOrbLT = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matMagicLT);
@@ -857,30 +917,24 @@ const ARROW_TYPES = [
   {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
 
-/* SPELLS ARE NOW UPGRADABLE TO LEVEL 3 */
 const RT_SPELLS = [
-  {id:'sp_fireball', name:'Fireball', baseDmg:[15, 25, 45], maxDmg:[30, 50, 90], splash:[0, 2.5, 5.0], manaCost:15, color:0xff6a2b, costs:[0, 150, 300], maxLevel:3, level:1},
-  {id:'sp_ice', name:'Ice Spike', baseDmg:[10, 20, 35], maxDmg:[35, 50, 75], splash:[0, 2.5, 5.0], manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, costs:[150, 250, 400], maxLevel:3, level:0},
-  {id:'sp_lightning', name:'Lightning', baseDmg:[15, 25, 40], maxDmg:[45, 65, 90], manaCost:18, color:0xfff44a, chainRange:[0, 4.5, 8], maxChain:[0, 2, 4], stunTime:[0.3, 0.6, 1.0], chainFalloff:0.65, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_fireball', name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b, cost:0, unlocked:true},
+  {id:'sp_ice', name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, cost:150, unlocked:false},
+  {id:'sp_lightning', name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65, cost:300, unlocked:false},
 ];
 
 const LT_SPELLS = [
-  {id:'sp_air', name:'Air Burst', dmg:[8, 15, 25], radius:[4, 6, 9], knockback:[2, 4.5, 8], stun:[0.5, 1.2, 2.0], manaCost:15, cd:1.2, color:0xffffff, costs:[0, 100, 200], maxLevel:3, level:1},
-  {id:'sp_poison', name:'Poison Bolt', dmg:[5, 10, 15], splash:[0, 2.5, 5.0], dot:{dmg:[3, 5, 8],time:4}, slow:{factor:[0.5, 0.65, 0.8],time:3}, manaCost:12, cd:0.5, color:0x8aff6a, costs:[120, 220, 350], maxLevel:3, level:0},
-  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false}, /* Teleport stays simple boolean */
-  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:[3, 5, 8], color:0x66d9ff, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
+  {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:8, color:0x66d9ff, cost:300, unlocked:false},
 ];
 
 function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedMelee(){ return MELEE_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedArrows(){ return ARROW_TYPES.filter(a=>a.unlocked || gameMode==='unlimited'); }
-
-function getSpellLevel(spell) {
-  if (gameMode === 'unlimited') return spell.maxLevel || 1;
-  return spell.maxLevel ? spell.level : (spell.unlocked ? 1 : 0);
-}
-function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>getSpellLevel(s)>0); }
-function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>getSpellLevel(s)>0); }
+function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
+function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
 
 const DEFAULT_KEY_BINDINGS = {
   moveForward:'KeyW', moveBack:'KeyS', moveLeft:'KeyA', moveRight:'KeyD',
@@ -1123,6 +1177,7 @@ function spawnWaveEnemies(){
     mesh.position.set(p.x, 0, p.z);
     scene.add(mesh);
     enemies.push({
+      id: mpNextEnemyId++,
       mesh, hp, maxHp:hp, speed: speed*(ranged?0.85:1),
       ranged, attackCd:0, alive:true,
       preferredRange: ranged ? (7+Math.random()*4) : 1.4,
@@ -1134,6 +1189,19 @@ function spawnWaveEnemies(){
 
 function damageEnemy(e, baseDmg, hitPartType){
   if(!e.alive) return;
+  if(mpIsMultiplayer && !mpIsHost){
+    // Client is not authoritative: report the hit to the host and just
+    // flash the enemy locally for immediate feedback. Real HP/death/score
+    // comes back through the next sim_state broadcast.
+    mpSend('hit_request', {id: e.id, dmg: baseDmg, hitPartType});
+    for(const part of e.mesh.userData.parts){ part.material.emissive.setHex(0xffffff); }
+    setTimeout(()=>{
+      if(e.mesh.userData.parts){
+        for(const part of e.mesh.userData.parts){ part.material.emissive.setHex(e.ranged?0x220033:0x330000); }
+      }
+    }, 90);
+    return;
+  }
   let multiplier = 1.0;
   if(hitPartType === 'head') { multiplier = 2.0; showMsg('HEADSHOT! 2x'); }
   else if(hitPartType === 'limb') { multiplier = 0.6; }
@@ -1231,47 +1299,39 @@ function fireFlameStream(){
   }
 }
 function fireFireballCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_fireball');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[0];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
+  const splash = spell.baseSplash + (spell.maxSplash-spell.baseSplash)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.8 + frac*0.9 + lvl*0.25);
+  mesh.scale.setScalar(0.8+frac*0.9);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(22), dmg, friendly:true, life:3, splash});
 }
 function fireIceSpikeCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_ice');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[1];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.7 + frac*0.6 + lvl*0.2);
+  mesh.scale.setScalar(0.7+frac*0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:splash,
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
     onHit:(e)=>{
       if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
       else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
 }
 function firePoisonBolt(){
-  const spell = LT_SPELLS.find(s=>s.id==='sp_poison');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.dmg[lvl];
-  const splash = spell.splash[lvl];
-  const dotDmg = spell.dot.dmg[lvl];
-  const slowFactor = spell.slow.factor[lvl];
+  const spell = LT_SPELLS[1];
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.6 + lvl*0.15);
+  mesh.scale.setScalar(0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:dmg, friendly:true, life:3, splash:splash,
-    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=dotDmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=slowFactor; }});
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:spell.dmg, friendly:true, life:3, splash:0,
+    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=spell.dot.dmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=spell.slow.factor; }});
 }
 function fireEnemyBolt(e){
   const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
@@ -1280,12 +1340,8 @@ function fireEnemyBolt(e){
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(14), dmg:9, friendly:false, life:4, splash:0});
 }
 function fireLightningCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_lightning');
-  const lvl = getSpellLevel(spell) - 1;
-  let dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const maxChain = spell.maxChain[lvl];
-  const chainRange = spell.chainRange[lvl];
-  const stunTime = spell.stunTime[lvl];
+  const spell = RT_SPELLS[2];
+  let dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const origin = player.pos.clone();
   raycaster.set(origin, dir);
@@ -1300,16 +1356,15 @@ function fireLightningCharged(frac){
   if(!current){ return; }
   const points = [origin.clone()];
   const hitSet = new Set();
-  
-  for(let chain=0; chain<=maxChain; chain++){
+  for(let chain=0; chain<=spell.maxChain; chain++){
     if(!current || !current.alive) break;
     const partType = hitMesh.userData?.partType || 'body';
     damageEnemy(current, dmg, partType);
-    current.stunTimer = Math.max(current.stunTimer, stunTime);
+    current.stunTimer = Math.max(current.stunTimer, spell.stunTime);
     hitSet.add(current);
     points.push(current.mesh.position.clone().setY(1));
     dmg *= spell.chainFalloff;
-    let next = null, bestD = chainRange;
+    let next = null, bestD = spell.chainRange;
     for(const e2 of enemies){
       if(!e2.alive || hitSet.has(e2)) continue;
       const d = e2.mesh.position.distanceTo(current.mesh.position);
@@ -1365,7 +1420,7 @@ document.getElementById('bestWave').textContent = bestWave;
 document.getElementById('bestScore').textContent = bestScore;
 
 const GAME_MODES = {
-  unlimited: 'Classic — infinite ammo and mana. Everything unlocked and maxed.',
+  unlimited: 'Classic — infinite ammo and mana. Everything unlocked.',
   ammo: 'Progression — start with basics, earn points to buy upgrades!',
   precision: 'Progression — unlimited ammo, but spamming lowers score multiplier.',
 };
@@ -1655,8 +1710,8 @@ function updateHudStyle(){
     const rt = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     const unlockedLT = getUnlockedLTSpells();
     const lt = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
-    wname = 'RT: ' + (rt.maxLevel ? `${rt.name} (Lv.${getSpellLevel(rt)})` : rt.name);
-    sub = 'LT: ' + (lt.maxLevel ? `${lt.name} (Lv.${getSpellLevel(lt)})` : lt.name);
+    wname = 'RT: ' + rt.name;
+    sub = 'LT: ' + lt.name;
   }
   document.getElementById('weaponName').textContent = wname;
   document.getElementById('subLine').textContent = sub;
@@ -1807,30 +1862,23 @@ function castLTSpell(){
   const spell = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
   if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
   if(player.cooldowns.secondary > 0) return;
-
-  const lvl = getSpellLevel(spell) - 1;
-
   if(spell.id==='sp_air'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    const radius = spell.radius[lvl];
-    const dmg = spell.dmg[lvl];
-    const stun = spell.stun[lvl];
-    const knockback = spell.knockback[lvl];
     spawnRing(0xffffff);
     flashScreen('220,220,255',0.15);
     applyPrecisionDecay();
     for(const e of enemies){
       if(!e.alive) continue;
       const d = e.mesh.position.distanceTo(player.pos);
-      if(d < radius){
-        damageEnemy(e, dmg, 'body');
-        e.stunTimer = stun;
+      if(d < spell.radius){
+        damageEnemy(e, spell.dmg, 'body');
+        e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
         
         raycaster.set(e.mesh.position.clone().setY(1), dir);
-        raycaster.far = knockback;
+        raycaster.far = spell.knockback;
         const hits = raycaster.intersectObjects(wallMeshes, true);
-        let actualKnockback = knockback;
+        let actualKnockback = spell.knockback;
         if(hits.length > 0) {
             actualKnockback = Math.max(0, hits[0].distance - 0.7);
         }
@@ -1848,7 +1896,7 @@ function castLTSpell(){
     doTeleport();
   } else if(spell.id==='sp_aegis'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    player.shieldTimer = spell.duration[lvl];
+    player.shieldTimer = spell.duration;
     showMsg('AEGIS SHIELD');
     flashScreen('120,220,255',0.25);
   }
@@ -2020,10 +2068,7 @@ function updateProjectiles(dt){
           if(p.splash>0){
             for(const e2 of enemies){
               if(!e2.alive || e2===e) continue;
-              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) {
-                 damageEnemy(e2, p.dmg*0.5, 'body');
-                 if(p.onHit) p.onHit(e2); /* Splash effect application! */
-              }
+              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) damageEnemy(e2, p.dmg*0.5, 'body');
             }
           }
           remove = true; break;
@@ -2279,56 +2324,23 @@ function buildShopUI(){
     meleeList.appendChild(item);
   });
 
-  /* BUILD SPELL UPGRADES UI */
   RT_SPELLS.concat(LT_SPELLS).forEach(w=>{
     const item = document.createElement('div');
     item.className = 'shopItem';
-    
-    if (w.maxLevel) {
-      const currentLvl = (gameMode==='unlimited') ? w.maxLevel : w.level;
-      const isMaxed = currentLvl >= w.maxLevel;
-      const title = `${w.name} (Lv. ${currentLvl})`;
-      let costText = 'MAXED';
-      let canAfford = false;
-      let btnText = isMaxed ? 'MAXED' : (currentLvl === 0 ? 'BUY' : 'UPGRADE');
-      
-      if (!isMaxed) {
-        const nextCost = w.costs[currentLvl];
-        costText = nextCost + ' PTS';
-        canAfford = state.score >= nextCost;
-      }
-      
-      item.innerHTML = `<div><span class="itemTitle">${title}</span><span class="itemSub">${costText}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isMaxed ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = btnText;
-      
-      if (!isMaxed && canAfford) {
-        btn.addEventListener('click', ()=>{
-          state.score -= w.costs[currentLvl];
-          w.level++;
-          buildShopUI();
-          updateHudStyle();
-        });
-      }
-      item.appendChild(btn);
-      
-    } else {
-      const isUnlocked = w.unlocked || gameMode==='unlimited';
-      const canAfford = state.score >= w.cost;
-      item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
-      if(!isUnlocked && canAfford){
-        btn.addEventListener('click', ()=>{
-          state.score -= w.cost;
-          w.unlocked = true;
-          buildShopUI();
-        });
-      }
-      item.appendChild(btn);
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        buildShopUI();
+      });
     }
+    item.appendChild(btn);
     magicList.appendChild(item);
   });
 
@@ -2369,6 +2381,7 @@ function startWave(){
     drawRadarBackground();
   }
   spawnWaveEnemies();
+  if(mpIsMultiplayer && mpIsHost) mpBroadcastWaveStart();
 }
 function checkWaveClear(){
   if(!state.betweenWaves && state.enemiesRemaining<=0){
@@ -2383,7 +2396,11 @@ function checkWaveClear(){
 document.getElementById('nextWaveBtn').addEventListener('click', ()=>{
   document.getElementById('shopOverlay').classList.add('hidden');
   if(!touchControlsEnabled && canvas.requestPointerLock) canvas.requestPointerLock();
-  startWave();
+  if(!mpIsMultiplayer || mpIsHost){
+    startWave();
+  }
+  // Client (non-host): the host advances the wave and broadcasts
+  // 'wave_start' — this button just closes the local shop UI early.
 });
 
 function die(){
@@ -2431,8 +2448,8 @@ function saveState() {
       fps: FPS_WEAPONS.map(w => w.unlocked),
       melee: MELEE_WEAPONS.map(w => w.unlocked),
       arrows: ARROW_TYPES.map(w => w.unlocked),
-      rt: RT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked),
-      lt: LT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked)
+      rt: RT_SPELLS.map(w => w.unlocked),
+      lt: LT_SPELLS.map(w => w.unlocked)
     }
   };
   localStorage.setItem('tf_savestate', JSON.stringify(data));
@@ -2485,20 +2502,8 @@ function loadState() {
       FPS_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.fps[i]);
       MELEE_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.melee[i]);
       ARROW_TYPES.forEach((w,i) => w.unlocked = data.unlocks.arrows[i]);
-      RT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.rt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.rt[i];
-      });
-      LT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.lt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.lt[i];
-      });
+      RT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.rt[i]);
+      LT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.lt[i]);
   }
 
   for(const e of enemies) { scene.remove(e.mesh); }
@@ -2613,15 +2618,24 @@ function frame(now){
     primaryHeldPrev = primaryHeld; secondaryHeldPrev = secondaryHeld;
 
     updateMovement(dt);
-    updateEnemies(dt);
+    if(!mpIsMultiplayer || mpIsHost){
+      updateEnemies(dt);
+    } else {
+      mpUpdateMirroredEnemies(dt);
+    }
     updateProjectiles(dt);
     updateEffects(dt);
     updateShieldVisual(dt);
     updateResources(dt);
+    mpBroadcastState(dt);
+    mpBroadcastSimState(dt);
+    mpUpdateRemoteAvatar(dt);
     
     updateViewmodelAnimations(now);
 
-    checkWaveClear();
+    if(!mpIsMultiplayer || mpIsHost){
+      checkWaveClear();
+    }
 
     if(player.hp <= 0){ player.hp = 0; die(); }
 
@@ -2649,10 +2663,429 @@ function enterArena(useTouch){
   
   gameStarted = true;
   updateHudStyle();
-  startWave();
+  if(!mpIsMultiplayer || mpIsHost){
+    startWave();
+  }
   startBackgroundMusic(); // Kicks off the 90s techno synth music!
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
+
+// ============================================================
+// MULTIPLAYER (PeerJS / WebRTC)
+// ------------------------------------------------------------
+// Phase 1 (done): lobby + connection. Player 1 hosts a room under
+// id "wavefighter-XXXX" and is the authoritative host. Player 2
+// joins via the 4-letter code; the host gets an accept/decline
+// prompt before the connection is treated as joined.
+// Phase 2 (done): each side broadcasts its own position/facing at
+// ~20Hz over the data channel and renders a simple avatar for the
+// other player, smoothed with lerp so motion doesn't look choppy
+// between updates.
+// Still TODO (phase 3): host-authoritative enemy AI, hit
+// detection, and wave sync — see mpHandleData()'s default cases.
+// ============================================================
+const MP_ROOM_PREFIX = 'wavefighter-';
+let mpPeer = null;            // this client's PeerJS Peer
+let mpConn = null;            // the active DataConnection to the other player
+let mpPendingConn = null;     // host-only: incoming connection awaiting accept/decline
+let mpIsHost = false;
+let mpIsMultiplayer = false;  // true once a match has actually started over a live connection
+let mpLocalName = 'Player';
+
+// Phase 2: remote player avatar + position sync
+let mpSendAccum = 0;
+const MP_SEND_INTERVAL = 0.05; // ~20Hz
+const mpRemotePlayer = { mesh: null, targetPos: new THREE.Vector3(), targetYaw: 0, alive: true };
+
+// Phase 3: host-authoritative enemies + wave/score sync
+let mpNextEnemyId = 1;         // used by spawnWaveEnemies() on the host / single-player
+let mpSimSendAccum = 0;
+const MP_SIM_SEND_INTERVAL = 0.1; // ~10Hz, host only
+let mpClientShopShown = false; // client-only: guards against reopening the shop every tick
+
+function mpBroadcastWaveStart(){
+  mpSend('wave_start', { wave: state.wave, mazeData: currentMazeData });
+}
+
+function mpBroadcastSimState(dt){
+  if(!mpIsMultiplayer || !mpIsHost || !mpConn || !mpConn.open) return;
+  mpSimSendAccum += dt;
+  if(mpSimSendAccum < MP_SIM_SEND_INTERVAL) return;
+  mpSimSendAccum = 0;
+  mpSend('sim_state', {
+    wave: state.wave,
+    enemiesRemaining: state.enemiesRemaining,
+    betweenWaves: state.betweenWaves,
+    score: state.score,
+    enemies: enemies.filter(e=>e.alive).map(e=>({
+      id: e.id, x: e.mesh.position.x, z: e.mesh.position.z,
+      hp: e.hp, maxHp: e.maxHp, ranged: e.ranged,
+    })),
+  });
+}
+
+// Client-only: rebuild/refresh its mirrored copy of the host's enemies
+// array from a sim_state snapshot. Reuses the same {id, mesh, hp, ...}
+// shape spawnWaveEnemies() produces so existing hit-detection code
+// (raycasts, melee range checks, projectile collision) keeps working
+// unmodified against these mirrored meshes.
+function mpApplySimState(data){
+  const wasBetween = state.betweenWaves;
+  state.wave = data.wave;
+  state.enemiesRemaining = data.enemiesRemaining;
+  state.betweenWaves = data.betweenWaves;
+  state.score = data.score;
+
+  if(state.betweenWaves && !wasBetween && !mpClientShopShown){
+    mpClientShopShown = true;
+    setTimeout(()=>{ if(player.alive) openShop(); }, 1500);
+  }
+  if(!state.betweenWaves) mpClientShopShown = false;
+
+  const seenIds = new Set();
+  for(const es of data.enemies){
+    seenIds.add(es.id);
+    let e = enemies.find(x=>x.id === es.id);
+    if(!e){
+      const mesh = makeEnemy(es.ranged);
+      mesh.position.set(es.x, 0, es.z);
+      scene.add(mesh);
+      e = {
+        id: es.id, mesh, hp: es.hp, maxHp: es.maxHp, ranged: es.ranged, alive: true,
+        speed: 0, attackCd: 0, preferredRange: 0, baseColorHex: es.ranged ? 0x9b3bdd : 0xdd3b3b,
+        frozenTimer: 0, stunTimer: 0, dotTimer: 0, dotDmg: 0, dotAcc: 0, slowTimer: 0, slowFactor: 1,
+        netTarget: new THREE.Vector3(es.x, 0, es.z),
+      };
+      enemies.push(e);
+    } else {
+      e.hp = es.hp; e.maxHp = es.maxHp;
+      e.netTarget.set(es.x, 0, es.z);
+    }
+  }
+  for(let i=enemies.length-1;i>=0;i--){
+    if(!seenIds.has(enemies[i].id)){
+      scene.remove(enemies[i].mesh);
+      enemies.splice(i,1);
+    }
+  }
+}
+
+// Client-only per-frame smoothing for mirrored enemies (no local AI —
+// position/HP only ever come from the host's sim_state broadcasts).
+function mpUpdateMirroredEnemies(dt){
+  for(const e of enemies){
+    if(!e.netTarget) continue;
+    e.mesh.position.lerp(e.netTarget, Math.min(1, dt*10));
+    e.mesh.lookAt(player.pos.x, e.mesh.position.y, player.pos.z);
+  }
+}
+
+function mpMakeAvatarMesh(){
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color: 0x3ba7ff, emissive: 0x0a2233});
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.3), mat);
+  torso.position.y = 1.05; torso.castShadow = true;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 10), mat);
+  head.position.y = 1.62; head.castShadow = true;
+  const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
+  leftArm.position.set(-0.35, 1.05, 0); leftArm.castShadow = true;
+  const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
+  rightArm.position.set(0.35, 1.05, 0); rightArm.castShadow = true;
+  const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
+  leftLeg.position.set(-0.15, 0.35, 0); leftLeg.castShadow = true;
+  const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
+  rightLeg.position.set(0.15, 0.35, 0); rightLeg.castShadow = true;
+  grp.add(torso, head, leftArm, rightArm, leftLeg, rightLeg);
+  return grp;
+}
+
+function mpSpawnRemoteAvatar(){
+  if(mpRemotePlayer.mesh) return;
+  const mesh = mpMakeAvatarMesh();
+  scene.add(mesh);
+  mpRemotePlayer.mesh = mesh;
+}
+
+function mpRemoveRemoteAvatar(){
+  if(mpRemotePlayer.mesh){
+    scene.remove(mpRemotePlayer.mesh);
+    mpRemotePlayer.mesh = null;
+  }
+}
+
+function mpAngleDiff(a, b){
+  return Math.atan2(Math.sin(a-b), Math.cos(a-b));
+}
+
+function mpBroadcastState(dt){
+  if(!mpIsMultiplayer || !mpConn || !mpConn.open) return;
+  mpSendAccum += dt;
+  if(mpSendAccum < MP_SEND_INTERVAL) return;
+  mpSendAccum = 0;
+  mpSend('player_state', {
+    pos: {x: player.pos.x, y: player.pos.y, z: player.pos.z},
+    yaw: player.yaw,
+    alive: player.alive,
+  });
+}
+
+function mpUpdateRemoteAvatar(dt){
+  if(!mpRemotePlayer.mesh) return;
+  const mesh = mpRemotePlayer.mesh;
+  const t = Math.min(1, dt*12);
+  mesh.position.lerp(mpRemotePlayer.targetPos, t);
+  mesh.rotation.y += mpAngleDiff(mpRemotePlayer.targetYaw, mesh.rotation.y) * t;
+  mesh.visible = mpRemotePlayer.alive;
+}
+
+function mpRandomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
+  let code = '';
+  for(let i=0;i<4;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+function mpShowPanel(id){
+  ['mpModeSelect','mpHostPanel','mpJoinPanel','mpLobbyPanel'].forEach(pid=>{
+    document.getElementById(pid).classList.toggle('hidden', pid !== id);
+  });
+}
+
+function mpCheckLib(){
+  if(typeof Peer === 'undefined'){
+    mpSetStatus('mpHost', 'Multiplayer library failed to load — check your connection and reload.');
+    mpSetStatus('mpJoin', 'Multiplayer library failed to load — check your connection and reload.');
+    return false;
+  }
+  return true;
+}
+
+function mpSetStatus(panelPrefix, text){
+  const el = document.getElementById(panelPrefix+'Status');
+  if(el) el.textContent = text;
+}
+
+function mpSend(type, data){
+  if(mpConn && mpConn.open) mpConn.send({type, data});
+}
+
+function mpWireConnection(c){
+  mpConn = c;
+  c.on('data', mpHandleData);
+  c.on('close', mpHandleDisconnect);
+  c.on('error', (err)=>{ console.warn('MP connection error', err); });
+}
+
+function mpHandleData(msg){
+  if(!msg || !msg.type) return;
+  switch(msg.type){
+    case 'join_request': // host only
+      if(mpPendingConn){
+        document.getElementById('mpJoinRequestName').textContent = (msg.data && msg.data.name) || 'A player';
+        document.getElementById('mpJoinRequestBanner').classList.remove('hidden');
+      }
+      break;
+    case 'accept': // client only
+      mpShowPanel('mpLobbyPanel');
+      document.getElementById('mpStartBtn').classList.add('hidden');
+      mpSetStatus('mpLobby', 'Connected to host. Waiting for host to start...');
+      break;
+    case 'decline': // client only
+      mpSetStatus('mpJoin', 'Host declined your request.');
+      if(mpConn){ mpConn.close(); mpConn = null; }
+      break;
+    case 'start_game': // client only
+      mpIsMultiplayer = true;
+      document.getElementById('mpOverlay').classList.add('hidden');
+      enterArena(false); // wave/enemy state arrives moments later via 'wave_start' + 'sim_state'
+      break;
+    case 'player_state':
+      mpSpawnRemoteAvatar();
+      mpRemotePlayer.targetPos.set(msg.data.pos.x, msg.data.pos.y - EYE_H, msg.data.pos.z);
+      mpRemotePlayer.targetYaw = msg.data.yaw;
+      mpRemotePlayer.alive = msg.data.alive;
+      break;
+    case 'wave_start': // client only — host just advanced the wave
+      state.wave = msg.data.wave;
+      state.betweenWaves = false;
+      mpClientShopShown = false;
+      document.getElementById('shopOverlay').classList.add('hidden');
+      showMsg('WAVE ' + state.wave);
+      player.hp = Math.min(player.maxHp, player.hp + 20);
+      if(gameMode==='ammo') refillAllAmmo();
+      if(msg.data.mazeData){
+        generateInteriorMaze(msg.data.mazeData);
+        drawRadarBackground();
+      }
+      break;
+    case 'sim_state': // client only — periodic host snapshot of enemies/wave/score
+      if(!mpIsHost) mpApplySimState(msg.data);
+      break;
+    case 'hit_request': // host only — a client is reporting a hit it landed
+      if(mpIsHost){
+        const target = enemies.find(x=>x.id === msg.data.id);
+        if(target) damageEnemy(target, msg.data.dmg, msg.data.hitPartType);
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+function mpHandleDisconnect(){
+  const wasActive = mpIsMultiplayer;
+  mpConn = null;
+  mpRemoveRemoteAvatar();
+  if(!mpIsHost){
+    // Host disconnected mid-match — no more sim_state updates will arrive,
+    // so drop the mirrored enemies rather than leave frozen meshes behind.
+    for(let i=enemies.length-1;i>=0;i--){
+      if(enemies[i].netTarget){ scene.remove(enemies[i].mesh); enemies.splice(i,1); }
+    }
+  }
+  if(gameStarted && wasActive){
+    showMsg('PLAYER DISCONNECTED');
+  }
+}
+
+function mpInitHostPeer(){
+  if(!mpCheckLib()) return;
+  const code = mpRandomCode();
+  mpSetStatus('mpHost', 'Connecting to relay server...');
+  const p = new Peer(MP_ROOM_PREFIX + code);
+  mpPeer = p;
+  p.on('open', ()=>{
+    document.getElementById('mpRoomCode').textContent = code;
+    mpSetStatus('mpHost', 'Waiting for Player 2 to join...');
+  });
+  p.on('connection', (c)=>{
+    mpPendingConn = c;
+    c.on('data', (msg)=>{
+      if(msg && msg.type === 'join_request'){
+        document.getElementById('mpJoinRequestName').textContent = (msg.data && msg.data.name) || 'A player';
+        document.getElementById('mpJoinRequestBanner').classList.remove('hidden');
+      }
+    });
+    c.on('close', ()=>{
+      document.getElementById('mpJoinRequestBanner').classList.add('hidden');
+      if(mpPendingConn === c) mpPendingConn = null;
+    });
+  });
+  p.on('error', (err)=>{
+    if(err.type === 'unavailable-id'){
+      p.destroy();
+      mpInitHostPeer(); // room code collision — regenerate and retry
+    } else {
+      mpSetStatus('mpHost', 'Connection error: ' + err.type);
+    }
+  });
+}
+
+function mpAcceptJoinRequest(){
+  if(!mpPendingConn) return;
+  const c = mpPendingConn;
+  mpPendingConn = null;
+  mpWireConnection(c);
+  document.getElementById('mpJoinRequestBanner').classList.add('hidden');
+  mpSend('accept', {});
+  mpIsHost = true;
+  mpShowPanel('mpLobbyPanel');
+  document.getElementById('mpStartBtn').classList.remove('hidden');
+  mpSetStatus('mpLobby', 'Player 2 connected! Ready to start.');
+}
+
+function mpDeclineJoinRequest(){
+  if(!mpPendingConn) return;
+  mpPendingConn.send({type:'decline'});
+  mpPendingConn.close();
+  mpPendingConn = null;
+  document.getElementById('mpJoinRequestBanner').classList.add('hidden');
+  mpSetStatus('mpHost', 'Waiting for Player 2 to join...');
+}
+
+function mpJoinRoom(code){
+  if(!mpCheckLib()) return;
+  mpSetStatus('mpJoin', 'Connecting to relay server...');
+  const p = new Peer();
+  mpPeer = p;
+  p.on('open', ()=>{
+    const c = p.connect(MP_ROOM_PREFIX + code.toUpperCase().trim());
+    c.on('open', ()=>{
+      mpWireConnection(c);
+      mpSetStatus('mpJoin', 'Requesting to join room ' + code.toUpperCase() + '...');
+      mpSend('join_request', {name: mpLocalName});
+    });
+    c.on('error', ()=>{ mpSetStatus('mpJoin', 'Could not reach that room.'); });
+  });
+  p.on('error', (err)=>{
+    if(err.type === 'peer-unavailable'){
+      mpSetStatus('mpJoin', 'Room not found. Check the code and try again.');
+    } else {
+      mpSetStatus('mpJoin', 'Connection error: ' + err.type);
+    }
+  });
+}
+
+function mpStartGame(){
+  if(!mpIsHost) return;
+  mpIsMultiplayer = true;
+  mpSend('start_game', {});
+  document.getElementById('mpOverlay').classList.add('hidden');
+  enterArena(false);
+}
+
+function mpLeaveLobby(){
+  if(mpPeer){ mpPeer.destroy(); mpPeer = null; }
+  mpConn = null; mpPendingConn = null;
+  mpIsHost = false; mpIsMultiplayer = false;
+  mpSendAccum = 0;
+  mpRemoveRemoteAvatar();
+  document.getElementById('mpJoinRequestBanner').classList.add('hidden');
+  mpShowPanel('mpModeSelect');
+}
+
+document.getElementById('mpMenuBtn').addEventListener('click', ()=>{
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('mpOverlay').classList.remove('hidden');
+  mpShowPanel('mpModeSelect');
+});
+document.getElementById('mpBackBtn').addEventListener('click', ()=>{
+  document.getElementById('mpOverlay').classList.add('hidden');
+  document.getElementById('startOverlay').classList.remove('hidden');
+});
+document.getElementById('mpHostBtn').addEventListener('click', ()=>{
+  mpLocalName = document.getElementById('mpNameInput').value.trim() || 'Player';
+  mpIsHost = true;
+  document.getElementById('mpRoomCode').textContent = '----';
+  mpShowPanel('mpHostPanel');
+  mpInitHostPeer();
+});
+document.getElementById('mpJoinBtn').addEventListener('click', ()=>{
+  mpLocalName = document.getElementById('mpNameInput').value.trim() || 'Player';
+  mpIsHost = false;
+  document.getElementById('mpJoinCodeInput').value = '';
+  mpSetStatus('mpJoin', 'Enter the room code from Player 1.');
+  mpShowPanel('mpJoinPanel');
+});
+document.getElementById('mpJoinConnectBtn').addEventListener('click', ()=>{
+  const code = document.getElementById('mpJoinCodeInput').value.trim();
+  if(code.length < 4){ mpSetStatus('mpJoin', 'Enter a valid 4-letter room code.'); return; }
+  mpJoinRoom(code);
+});
+document.getElementById('mpRoomCode').addEventListener('click', ()=>{
+  const code = document.getElementById('mpRoomCode').textContent;
+  if(code && code !== '----' && navigator.clipboard){
+    navigator.clipboard.writeText(code).then(()=>{
+      mpSetStatus('mpHost', 'Code copied! Send it to Player 2.');
+    }).catch(()=>{});
+  }
+});
+document.getElementById('mpHostCancelBtn').addEventListener('click', mpLeaveLobby);
+document.getElementById('mpJoinCancelBtn').addEventListener('click', mpLeaveLobby);
+document.getElementById('mpLobbyLeaveBtn').addEventListener('click', mpLeaveLobby);
+document.getElementById('mpStartBtn').addEventListener('click', mpStartGame);
+document.getElementById('mpAcceptBtn').addEventListener('click', mpAcceptJoinRequest);
+document.getElementById('mpDeclineBtn').addEventListener('click', mpDeclineJoinRequest);
 
 document.getElementById('saveStateBtn').addEventListener('click', saveState);
 document.getElementById('loadStateBtn').addEventListener('click', loadState);

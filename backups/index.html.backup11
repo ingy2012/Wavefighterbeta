@@ -382,14 +382,14 @@ function startBackgroundMusic() {
   const bassNotes = [110, 110, 87.31, 87.31, 130.81, 130.81, 98.00, 98.00]; 
   const leadMelody = [440, 523.25, 659.25, 523.25, 587.33, 659.25, 783.99, 659.25];
   let step = 0;
-  const bpm = 138;
-  const stepTime = (60 / bpm) / 2;
+  const bpm = 138; // Driving fast 90s arcade techno tempo
+  const stepTime = (60 / bpm) / 2; // 16th notes feel
 
   musicInterval = setInterval(() => {
     if (!gameStarted || paused || !player.alive) return;
     const now = audioCtx.currentTime;
 
-    // 1. Kick Drum
+    // 1. Driving Kick Drum on every quarter note (beats 0, 4, 8, 12)
     if (step % 4 === 0) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -401,7 +401,7 @@ function startBackgroundMusic() {
       osc.start(now); osc.stop(now + 0.18);
     }
 
-    // 2. Hi-hat
+    // 2. Crisp techno hi-hat on every off-beat (2, 6, 10, 14)
     if (step % 4 === 2) {
       const bufferSize = audioCtx.sampleRate * 0.04;
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -418,7 +418,7 @@ function startBackgroundMusic() {
       noise.start(now); noise.stop(now + 0.04);
     }
 
-    // 3. Bassline
+    // 3. Pumping 90s Synth Bassline (Sawtooth wave with filter envelope)
     const bFreq = bassNotes[Math.floor(step / 2) % bassNotes.length];
     const bass = audioCtx.createOscillator();
     bass.type = 'sawtooth';
@@ -433,7 +433,7 @@ function startBackgroundMusic() {
     bass.connect(filter); filter.connect(bassGain); bassGain.connect(audioCtx.destination);
     bass.start(now); bass.stop(now + stepTime);
 
-    // 4. Synth Lead
+    // 4. Bright Arcade Synth Lead melody hits
     if (step % 2 === 0) {
       const lFreq = leadMelody[(step / 2) % leadMelody.length];
       const lead = audioCtx.createOscillator();
@@ -464,6 +464,7 @@ const matWood = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.9,
 const matMagicLT = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.8, ...matOpts});
 const matMagicRT = new THREE.MeshBasicMaterial({color: 0xff6a2b, transparent: true, opacity: 0.8, ...matOpts});
 
+// 1. Standard Gun Viewmodel (Assault Rifle, Flame, Rocket)
 const vmStdGun = new THREE.Group();
 const stdBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), matGunGrey);
 stdBarrel.rotation.x = Math.PI / 2;
@@ -473,12 +474,14 @@ stdBody.position.set(0, -0.05, 0);
 vmStdGun.add(stdBarrel, stdBody);
 viewmodelGroup.add(vmStdGun);
 
+// 2. Dual Guns Viewmodel (Pistols)
 const vmDualGuns = new THREE.Group();
 const leftGun = vmStdGun.clone();
 const rightGun = vmStdGun.clone();
 vmDualGuns.add(leftGun, rightGun);
 viewmodelGroup.add(vmDualGuns);
 
+// 3. Sniper Rifle Viewmodel
 const vmSniper = new THREE.Group();
 const sniperBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.4), matGunDark);
 sniperBody.position.set(0, -0.05, 0);
@@ -493,6 +496,7 @@ scopeTube.position.set(0, 0.08, -0.05);
 vmSniper.add(sniperBody, sniperBarrel, scopeMount, scopeTube);
 viewmodelGroup.add(vmSniper);
 
+// 4. Shotgun Viewmodel
 const vmShotgun = new THREE.Group();
 const sgBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.3), matGunDark);
 sgBody.position.set(0, -0.05, 0);
@@ -507,6 +511,7 @@ sgPump.position.set(0, -0.02, -0.25);
 vmShotgun.add(sgBody, sgBarrelL, sgBarrelR, sgPump);
 viewmodelGroup.add(vmShotgun);
 
+// 5. Sword & Shield
 const vmSwordShield = new THREE.Group();
 const smallSword = new THREE.Group();
 const ssBlade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.015), matSteel);
@@ -521,6 +526,7 @@ shieldMeshVM.rotation.x = Math.PI / 2;
 vmSwordShield.add(smallSword, shieldMeshVM);
 viewmodelGroup.add(vmSwordShield);
 
+// 6. Claymore
 const vmClaymore = new THREE.Group();
 const clayBlade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.02), matSteel);
 clayBlade.position.set(0, 0.45, 0);
@@ -530,6 +536,7 @@ clayHandle.position.set(0, -0.125, 0);
 vmClaymore.add(clayBlade, clayGuard, clayHandle);
 viewmodelGroup.add(vmClaymore);
 
+// 7. Spear
 const vmSpear = new THREE.Group();
 const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.8, 8), matWood);
 spearShaft.position.set(0, 0, 0);
@@ -538,12 +545,14 @@ spearTip.position.set(0, 0.9 + 0.175, 0);
 vmSpear.add(spearShaft, spearTip);
 viewmodelGroup.add(vmSpear);
 
+// 8. Bow Viewmodel
 const vmBow = new THREE.Group();
 const bowCurve = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.03, 8, 16, Math.PI), matWood);
 bowCurve.rotation.z = Math.PI/2;
 vmBow.add(bowCurve);
 viewmodelGroup.add(vmBow);
 
+// 9. Magic Hands/Orbs
 const vmMagic = new THREE.Group();
 const magicOrbRT = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), matMagicRT);
 const magicOrbLT = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matMagicLT);
@@ -857,30 +866,24 @@ const ARROW_TYPES = [
   {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
 
-/* SPELLS ARE NOW UPGRADABLE TO LEVEL 3 */
 const RT_SPELLS = [
-  {id:'sp_fireball', name:'Fireball', baseDmg:[15, 25, 45], maxDmg:[30, 50, 90], splash:[0, 2.5, 5.0], manaCost:15, color:0xff6a2b, costs:[0, 150, 300], maxLevel:3, level:1},
-  {id:'sp_ice', name:'Ice Spike', baseDmg:[10, 20, 35], maxDmg:[35, 50, 75], splash:[0, 2.5, 5.0], manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, costs:[150, 250, 400], maxLevel:3, level:0},
-  {id:'sp_lightning', name:'Lightning', baseDmg:[15, 25, 40], maxDmg:[45, 65, 90], manaCost:18, color:0xfff44a, chainRange:[0, 4.5, 8], maxChain:[0, 2, 4], stunTime:[0.3, 0.6, 1.0], chainFalloff:0.65, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_fireball', name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b, cost:0, unlocked:true},
+  {id:'sp_ice', name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, cost:150, unlocked:false},
+  {id:'sp_lightning', name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65, cost:300, unlocked:false},
 ];
 
 const LT_SPELLS = [
-  {id:'sp_air', name:'Air Burst', dmg:[8, 15, 25], radius:[4, 6, 9], knockback:[2, 4.5, 8], stun:[0.5, 1.2, 2.0], manaCost:15, cd:1.2, color:0xffffff, costs:[0, 100, 200], maxLevel:3, level:1},
-  {id:'sp_poison', name:'Poison Bolt', dmg:[5, 10, 15], splash:[0, 2.5, 5.0], dot:{dmg:[3, 5, 8],time:4}, slow:{factor:[0.5, 0.65, 0.8],time:3}, manaCost:12, cd:0.5, color:0x8aff6a, costs:[120, 220, 350], maxLevel:3, level:0},
-  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false}, /* Teleport stays simple boolean */
-  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:[3, 5, 8], color:0x66d9ff, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
+  {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:8, color:0x66d9ff, cost:300, unlocked:false},
 ];
 
 function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedMelee(){ return MELEE_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedArrows(){ return ARROW_TYPES.filter(a=>a.unlocked || gameMode==='unlimited'); }
-
-function getSpellLevel(spell) {
-  if (gameMode === 'unlimited') return spell.maxLevel || 1;
-  return spell.maxLevel ? spell.level : (spell.unlocked ? 1 : 0);
-}
-function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>getSpellLevel(s)>0); }
-function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>getSpellLevel(s)>0); }
+function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
+function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
 
 const DEFAULT_KEY_BINDINGS = {
   moveForward:'KeyW', moveBack:'KeyS', moveLeft:'KeyA', moveRight:'KeyD',
@@ -1231,47 +1234,39 @@ function fireFlameStream(){
   }
 }
 function fireFireballCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_fireball');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[0];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
+  const splash = spell.baseSplash + (spell.maxSplash-spell.baseSplash)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.8 + frac*0.9 + lvl*0.25);
+  mesh.scale.setScalar(0.8+frac*0.9);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(22), dmg, friendly:true, life:3, splash});
 }
 function fireIceSpikeCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_ice');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[1];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.7 + frac*0.6 + lvl*0.2);
+  mesh.scale.setScalar(0.7+frac*0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:splash,
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
     onHit:(e)=>{
       if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
       else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
 }
 function firePoisonBolt(){
-  const spell = LT_SPELLS.find(s=>s.id==='sp_poison');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.dmg[lvl];
-  const splash = spell.splash[lvl];
-  const dotDmg = spell.dot.dmg[lvl];
-  const slowFactor = spell.slow.factor[lvl];
+  const spell = LT_SPELLS[1];
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.6 + lvl*0.15);
+  mesh.scale.setScalar(0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:dmg, friendly:true, life:3, splash:splash,
-    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=dotDmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=slowFactor; }});
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:spell.dmg, friendly:true, life:3, splash:0,
+    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=spell.dot.dmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=spell.slow.factor; }});
 }
 function fireEnemyBolt(e){
   const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
@@ -1280,12 +1275,8 @@ function fireEnemyBolt(e){
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(14), dmg:9, friendly:false, life:4, splash:0});
 }
 function fireLightningCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_lightning');
-  const lvl = getSpellLevel(spell) - 1;
-  let dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const maxChain = spell.maxChain[lvl];
-  const chainRange = spell.chainRange[lvl];
-  const stunTime = spell.stunTime[lvl];
+  const spell = RT_SPELLS[2];
+  let dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const origin = player.pos.clone();
   raycaster.set(origin, dir);
@@ -1300,16 +1291,15 @@ function fireLightningCharged(frac){
   if(!current){ return; }
   const points = [origin.clone()];
   const hitSet = new Set();
-  
-  for(let chain=0; chain<=maxChain; chain++){
+  for(let chain=0; chain<=spell.maxChain; chain++){
     if(!current || !current.alive) break;
     const partType = hitMesh.userData?.partType || 'body';
     damageEnemy(current, dmg, partType);
-    current.stunTimer = Math.max(current.stunTimer, stunTime);
+    current.stunTimer = Math.max(current.stunTimer, spell.stunTime);
     hitSet.add(current);
     points.push(current.mesh.position.clone().setY(1));
     dmg *= spell.chainFalloff;
-    let next = null, bestD = chainRange;
+    let next = null, bestD = spell.chainRange;
     for(const e2 of enemies){
       if(!e2.alive || hitSet.has(e2)) continue;
       const d = e2.mesh.position.distanceTo(current.mesh.position);
@@ -1365,7 +1355,7 @@ document.getElementById('bestWave').textContent = bestWave;
 document.getElementById('bestScore').textContent = bestScore;
 
 const GAME_MODES = {
-  unlimited: 'Classic — infinite ammo and mana. Everything unlocked and maxed.',
+  unlimited: 'Classic — infinite ammo and mana. Everything unlocked.',
   ammo: 'Progression — start with basics, earn points to buy upgrades!',
   precision: 'Progression — unlimited ammo, but spamming lowers score multiplier.',
 };
@@ -1655,8 +1645,8 @@ function updateHudStyle(){
     const rt = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     const unlockedLT = getUnlockedLTSpells();
     const lt = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
-    wname = 'RT: ' + (rt.maxLevel ? `${rt.name} (Lv.${getSpellLevel(rt)})` : rt.name);
-    sub = 'LT: ' + (lt.maxLevel ? `${lt.name} (Lv.${getSpellLevel(lt)})` : lt.name);
+    wname = 'RT: ' + rt.name;
+    sub = 'LT: ' + lt.name;
   }
   document.getElementById('weaponName').textContent = wname;
   document.getElementById('subLine').textContent = sub;
@@ -1807,30 +1797,23 @@ function castLTSpell(){
   const spell = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
   if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
   if(player.cooldowns.secondary > 0) return;
-
-  const lvl = getSpellLevel(spell) - 1;
-
   if(spell.id==='sp_air'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    const radius = spell.radius[lvl];
-    const dmg = spell.dmg[lvl];
-    const stun = spell.stun[lvl];
-    const knockback = spell.knockback[lvl];
     spawnRing(0xffffff);
     flashScreen('220,220,255',0.15);
     applyPrecisionDecay();
     for(const e of enemies){
       if(!e.alive) continue;
       const d = e.mesh.position.distanceTo(player.pos);
-      if(d < radius){
-        damageEnemy(e, dmg, 'body');
-        e.stunTimer = stun;
+      if(d < spell.radius){
+        damageEnemy(e, spell.dmg, 'body');
+        e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
         
         raycaster.set(e.mesh.position.clone().setY(1), dir);
-        raycaster.far = knockback;
+        raycaster.far = spell.knockback;
         const hits = raycaster.intersectObjects(wallMeshes, true);
-        let actualKnockback = knockback;
+        let actualKnockback = spell.knockback;
         if(hits.length > 0) {
             actualKnockback = Math.max(0, hits[0].distance - 0.7);
         }
@@ -1848,7 +1831,7 @@ function castLTSpell(){
     doTeleport();
   } else if(spell.id==='sp_aegis'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    player.shieldTimer = spell.duration[lvl];
+    player.shieldTimer = spell.duration;
     showMsg('AEGIS SHIELD');
     flashScreen('120,220,255',0.25);
   }
@@ -2020,10 +2003,7 @@ function updateProjectiles(dt){
           if(p.splash>0){
             for(const e2 of enemies){
               if(!e2.alive || e2===e) continue;
-              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) {
-                 damageEnemy(e2, p.dmg*0.5, 'body');
-                 if(p.onHit) p.onHit(e2); /* Splash effect application! */
-              }
+              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) damageEnemy(e2, p.dmg*0.5, 'body');
             }
           }
           remove = true; break;
@@ -2279,56 +2259,23 @@ function buildShopUI(){
     meleeList.appendChild(item);
   });
 
-  /* BUILD SPELL UPGRADES UI */
   RT_SPELLS.concat(LT_SPELLS).forEach(w=>{
     const item = document.createElement('div');
     item.className = 'shopItem';
-    
-    if (w.maxLevel) {
-      const currentLvl = (gameMode==='unlimited') ? w.maxLevel : w.level;
-      const isMaxed = currentLvl >= w.maxLevel;
-      const title = `${w.name} (Lv. ${currentLvl})`;
-      let costText = 'MAXED';
-      let canAfford = false;
-      let btnText = isMaxed ? 'MAXED' : (currentLvl === 0 ? 'BUY' : 'UPGRADE');
-      
-      if (!isMaxed) {
-        const nextCost = w.costs[currentLvl];
-        costText = nextCost + ' PTS';
-        canAfford = state.score >= nextCost;
-      }
-      
-      item.innerHTML = `<div><span class="itemTitle">${title}</span><span class="itemSub">${costText}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isMaxed ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = btnText;
-      
-      if (!isMaxed && canAfford) {
-        btn.addEventListener('click', ()=>{
-          state.score -= w.costs[currentLvl];
-          w.level++;
-          buildShopUI();
-          updateHudStyle();
-        });
-      }
-      item.appendChild(btn);
-      
-    } else {
-      const isUnlocked = w.unlocked || gameMode==='unlimited';
-      const canAfford = state.score >= w.cost;
-      item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
-      if(!isUnlocked && canAfford){
-        btn.addEventListener('click', ()=>{
-          state.score -= w.cost;
-          w.unlocked = true;
-          buildShopUI();
-        });
-      }
-      item.appendChild(btn);
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        buildShopUI();
+      });
     }
+    item.appendChild(btn);
     magicList.appendChild(item);
   });
 
@@ -2431,8 +2378,8 @@ function saveState() {
       fps: FPS_WEAPONS.map(w => w.unlocked),
       melee: MELEE_WEAPONS.map(w => w.unlocked),
       arrows: ARROW_TYPES.map(w => w.unlocked),
-      rt: RT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked),
-      lt: LT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked)
+      rt: RT_SPELLS.map(w => w.unlocked),
+      lt: LT_SPELLS.map(w => w.unlocked)
     }
   };
   localStorage.setItem('tf_savestate', JSON.stringify(data));
@@ -2485,20 +2432,8 @@ function loadState() {
       FPS_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.fps[i]);
       MELEE_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.melee[i]);
       ARROW_TYPES.forEach((w,i) => w.unlocked = data.unlocks.arrows[i]);
-      RT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.rt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.rt[i];
-      });
-      LT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.lt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.lt[i];
-      });
+      RT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.rt[i]);
+      LT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.lt[i]);
   }
 
   for(const e of enemies) { scene.remove(e.mesh); }

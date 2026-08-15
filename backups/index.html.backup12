@@ -146,9 +146,45 @@
       gap:6px;
       justify-content:end;
     }
-    #touchActionGrid .touchBtn:nth-child(1), #touchActionGrid .touchBtn:nth-child(2) { transform: translateY(0); }
-    #touchActionGrid .touchBtn:nth-child(3), #touchActionGrid .touchBtn:nth-child(4) { transform: translateY(0); }
+    #touchActionGrid .touchBtn:nth-child(1), #touchActionGrid .touchBtn:nth-child(2) { transform:translateY(0); }
+    #touchActionGrid .touchBtn:nth-child(3), #touchActionGrid .touchBtn:nth-child(4) { transform:translateY(0); }
   }
+
+  /* =========================================================
+     WAVEFIGHTER ONLINE LOBBY - FIXED MULTIPLAYER
+  ========================================================= */
+  #onlineLobby{
+    margin-top:14px;
+    padding:12px;
+    max-width:600px;
+    width:100%;
+    background:rgba(40,80,120,.10);
+    border:1px solid rgba(102,217,255,.20);
+    border-radius:10px;
+  }
+  #onlineLobby h3{margin:0 0 9px;font-size:13px;letter-spacing:1.5px;color:#66d9ff;}
+  .online-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;}
+  .onlineBtn{min-width:135px;}
+  #roomCodeInput{
+    width:150px;box-sizing:border-box;
+    background:rgba(0,0,0,.35);
+    border:1px solid rgba(255,255,255,.25);
+    color:#fff;border-radius:7px;padding:9px 10px;
+    text-align:center;text-transform:uppercase;
+    letter-spacing:2px;font-weight:700;
+  }
+  #roomCodeDisplay{
+    font-size:25px;font-weight:900;letter-spacing:5px;
+    color:#66d9ff;margin:7px 0;
+  }
+  #onlineStatus{font-size:11px;opacity:.78;margin-top:7px;min-height:16px;}
+  #onlineRole{font-size:10px;opacity:.6;letter-spacing:1px;margin-top:3px;}
+  .network-overlay{z-index:60;}
+  .network-overlay h1{font-size:28px;}
+  #joinWaitingOverlay .big,#hostInviteOverlay .big{min-width:130px;}
+  #hostInviteName{font-size:16px;margin:6px 0 14px;}
+  #hostInviteDetail{font-size:11px;opacity:.7;max-width:420px;line-height:1.5;}
+
 </style>
 </head>
 <body>
@@ -163,6 +199,7 @@
     <div class="bar"><div class="bar-fill" id="resFill" style="width:100%"></div></div>
   </div>
   <div id="topCenter">
+    <div id="networkHudTag" style="font-size:9px;letter-spacing:1px;opacity:.7;"></div>
     <div id="waveText">WAVE 1</div>
     <div id="enemyCount">enemies: 0</div>
     <div id="scoreText" style="font-size:11px;opacity:.8;margin-top:2px;">Score: 0</div>
@@ -251,13 +288,42 @@
     <div id="modeDesc" style="font-size:11px;opacity:.8;margin-top:10px;"></div>
   </div>
 
-  <div style="display:flex; gap:12px; justify-content:center;">
+  <div id="onlineLobby">
+    <h3>ONLINE MULTIPLAYER</h3>
+    <div class="online-row">
+      <button class="bindBtn onlineBtn" id="hostOnlineBtn">HOST ROOM</button>
+      <input id="roomCodeInput" maxlength="10" autocomplete="off" placeholder="ROOM CODE">
+      <button class="bindBtn onlineBtn" id="joinOnlineBtn">JOIN ROOM</button>
+    </div>
+    <div id="roomCodeDisplay" class="hidden"></div>
+    <div id="onlineRole"></div>
+    <div id="onlineStatus">Single-player ready. Host a room or join a friend's room.</div>
+  </div>
+
+  <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
     <button class="big" id="startBtn">ENTER ARENA</button>
     <button class="big" id="loadStateBtn" style="display:none; background:linear-gradient(135deg,#3ba7ff,#3bffd8); color:#000;">LOAD STATE</button>
   </div>
   
   <div><button class="big" id="startSettingsBtn" style="margin-top:10px;background:linear-gradient(135deg,#555,#333);font-size:13px;padding:8px 24px;">SETTINGS</button></div>
   <div id="statLine">Best wave reached: <span id="bestWave">0</span> &nbsp;|&nbsp; Best score: <span id="bestScore">0</span></div>
+</div>
+
+<div class="overlay hidden network-overlay" id="hostInviteOverlay">
+  <h1>PLAYER JOIN REQUEST</h1>
+  <h2>A player wants to join your Wavefighter room.</h2>
+  <div id="hostInviteName">PLAYER 2</div>
+  <div id="hostInviteDetail">Accept to let them enter the arena.</div>
+  <div style="display:flex;gap:12px;margin-top:16px;">
+    <button class="big" id="acceptInviteBtn">ACCEPT</button>
+    <button class="big" id="declineInviteBtn" style="background:linear-gradient(135deg,#555,#333);">DECLINE</button>
+  </div>
+</div>
+
+<div class="overlay hidden network-overlay" id="joinWaitingOverlay">
+  <h1>WAITING FOR HOST</h1>
+  <h2 id="joinWaitingText">Join request sent.</h2>
+  <button class="big" id="cancelJoinBtn" style="margin-top:14px;background:linear-gradient(135deg,#555,#333);">CANCEL</button>
 </div>
 
 <!-- SHOP / PROGRESSION OVERLAY -->
@@ -338,6 +404,415 @@
 window.__startGame = function(){
 "use strict";
 
+// =========================================================
+// WAVEFIGHTER ONLINE / PEERJS LOBBY - FIXED MULTIPLAYER
+// The host is authoritative. Client sends inputs, host processes them.
+// =========================================================
+let wfPeer = null;
+let wfConn = null;
+let wfRole = 'solo';          // solo | host | client
+let wfRoomCode = '';
+let wfPendingConn = null;
+let wfPeerReady = false;
+let wfPeerScriptPromise = null;
+let wfClientKeys = {};        // Client's key state sent to host
+let wfHostPlayerId = null;    // Host's peer ID
+
+const WF_PEERJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js';
+
+function wfSetOnlineStatus(message, error=false){
+  const el = document.getElementById('onlineStatus');
+  if(!el) return;
+  el.textContent = message;
+  el.style.color = error ? '#ff8a8a' : '';
+}
+
+function wfSetRole(role, code=''){
+  wfRole = role;
+  wfRoomCode = code;
+  const roleEl = document.getElementById('onlineRole');
+  const codeEl = document.getElementById('roomCodeDisplay');
+  if(role === 'host'){
+    roleEl.textContent = 'PLAYER 1 • HOST • AUTHORITATIVE';
+    codeEl.textContent = code;
+    codeEl.classList.remove('hidden');
+  }else if(role === 'client'){
+    roleEl.textContent = 'PLAYER 2 • CLIENT';
+    codeEl.classList.add('hidden');
+  }else{
+    roleEl.textContent = '';
+    codeEl.classList.add('hidden');
+  }
+}
+
+function wfLoadPeerJS(){
+  if(window.Peer) return Promise.resolve();
+  if(wfPeerScriptPromise) return wfPeerScriptPromise;
+
+  wfPeerScriptPromise = new Promise((resolve,reject)=>{
+    const s = document.createElement('script');
+    s.src = WF_PEERJS_URL;
+    s.onload = () => window.Peer ? resolve() : reject(new Error('PeerJS loaded but Peer is unavailable.'));
+    s.onerror = () => reject(new Error('Could not load PeerJS.'));
+    document.head.appendChild(s);
+  });
+  return wfPeerScriptPromise;
+}
+
+function wfMakeRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0;i<6;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+function wfShowStartLobby(){
+  document.getElementById('startOverlay').classList.remove('hidden');
+  document.getElementById('joinWaitingOverlay').classList.add('hidden');
+  document.getElementById('hostInviteOverlay').classList.add('hidden');
+}
+
+function wfStartGameAs(role){
+  wfRole = role;
+  document.getElementById('joinWaitingOverlay').classList.add('hidden');
+  document.getElementById('hostInviteOverlay').classList.add('hidden');
+  enterArena('ontouchstart' in window && !canvas.requestPointerLock);
+}
+
+function wfSend(message){
+  if(wfConn && wfConn.open) wfConn.send(message);
+}
+
+function wfSetupConnection(conn){
+  wfConn = conn;
+
+  conn.on('open', ()=>{
+    wfPeerReady = true;
+
+    if(wfRole === 'host'){
+      wfSend({
+        type:'host-welcome',
+        protocol:1,
+        roomCode:wfRoomCode,
+        hostAuthoritative:true,
+        gameMode:gameMode
+      });
+      wfSetOnlineStatus('PLAYER 2 connected. Waiting for host acceptance...');
+    }else{
+      wfSend({
+        type:'join-request',
+        protocol:1,
+        roomCode:wfRoomCode,
+        playerName:'PLAYER 2'
+      });
+      document.getElementById('joinWaitingOverlay').classList.remove('hidden');
+      document.getElementById('joinWaitingText').textContent =
+        'Room found. Waiting for Player 1 to accept your invitation.';
+      wfSetOnlineStatus('Join request sent.');
+    }
+  });
+
+  conn.on('data', msg=>{
+    if(!msg || typeof msg !== 'object') return;
+
+    // --- HOST: receive join request from client ---
+    if(msg.type === 'join-request' && wfRole === 'host'){
+      wfPendingConn = conn;
+      document.getElementById('hostInviteName').textContent =
+        msg.playerName || 'PLAYER 2';
+      document.getElementById('hostInviteOverlay').classList.remove('hidden');
+      wfSetOnlineStatus('Player 2 is requesting to join.');
+      return;
+    }
+
+    // --- CLIENT: receive host's accept/decline ---
+    if(msg.type === 'join-accepted' && wfRole === 'client'){
+      document.getElementById('joinWaitingOverlay').classList.add('hidden');
+      wfSetOnlineStatus('Accepted! Entering the arena...');
+      wfStartGameAs('client');
+      return;
+    }
+
+    if(msg.type === 'join-declined' && wfRole === 'client'){
+      document.getElementById('joinWaitingOverlay').classList.add('hidden');
+      wfSetOnlineStatus('Player 1 declined the join request.', true);
+      wfRole = 'solo';
+      if(wfConn){ wfConn.close(); wfConn=null; }
+      return;
+    }
+
+    // --- CLIENT: receive host's authoritative state update ---
+    if(msg.type === 'STATE_UPDATE' && wfRole === 'client'){
+      // Apply host's authoritative player position
+      if(msg.players && msg.players[wfHostPlayerId]) {
+        const hostPos = msg.players[wfHostPlayerId];
+        // Update host player's position in our local state
+        // We'll use this in the render loop
+        if(window.wfHostPos) {
+          window.wfHostPos.x = hostPos.x;
+          window.wfHostPos.z = hostPos.z;
+          window.wfHostPos.yaw = hostPos.yaw || 0;
+        }
+      }
+      return;
+    }
+
+    // --- HOST: receive client's input ---
+    if(msg.type === 'INPUT' && wfRole === 'host'){
+      // Store client's key state for processing in game loop
+      if(msg.keys) {
+        wfClientKeys = msg.keys;
+      }
+      return;
+    }
+  });
+
+  conn.on('close', ()=>{
+    wfPeerReady = false;
+    if(wfRole !== 'solo'){
+      wfSetOnlineStatus('Peer connection closed. Returning to the lobby.', true);
+      wfConn = null;
+      wfRole = 'solo';
+      wfShowStartLobby();
+    }
+  });
+
+  conn.on('error', err=>{
+    console.warn('[Wavefighter PeerJS] Data connection error:', err);
+    wfSetOnlineStatus('Peer connection error: ' + (err?.message || 'unknown error'), true);
+  });
+}
+
+async function wfHostRoom(){
+  if(wfPeer) return;
+
+  wfSetOnlineStatus('Starting PeerJS host...');
+  wfSetRole('host');
+
+  try{
+    await wfLoadPeerJS();
+    const code = wfMakeRoomCode();
+    const peerId = 'wf-' + code.toLowerCase();
+
+    wfPeer = new Peer(peerId, {
+      debug: 1,
+      config: {
+        iceServers: [{urls:'stun:stun.l.google.com:19302'}]
+      }
+    });
+
+    wfPeer.on('open', id=>{
+      wfRoomCode = code;
+      wfHostPlayerId = id;
+      wfSetRole('host', code);
+      wfSetOnlineStatus('Room ready. Share the 6-character code with Player 2.');
+    });
+
+    wfPeer.on('connection', conn=>{
+      if(wfConn && wfConn.open){
+        conn.on('open', ()=>conn.send({type:'join-declined',reason:'Room already has two players.'}));
+        setTimeout(()=>conn.close(), 500);
+        return;
+      }
+      wfSetupConnection(conn);
+    });
+
+    wfPeer.on('error', err=>{
+      console.warn('[Wavefighter PeerJS] Host error:', err);
+      if(err.type === 'unavailable-id'){
+        wfPeer?.destroy();
+        wfPeer = null;
+        wfSetRole('solo');
+        wfSetOnlineStatus('Room code collision. Please try HOST ROOM again.', true);
+      }else{
+        wfSetOnlineStatus('Host error: ' + (err.message || err.type || 'unknown error'), true);
+      }
+    });
+
+    wfPeer.on('disconnected', ()=>{
+      wfSetOnlineStatus('Disconnected from the PeerJS signaling server.', true);
+    });
+  }catch(err){
+    wfPeer = null;
+    wfSetRole('solo');
+    wfSetOnlineStatus(err.message || 'PeerJS could not be loaded.', true);
+  }
+}
+
+async function wfJoinRoom(){
+  if(wfPeer || wfConn) return;
+
+  const code = document.getElementById('roomCodeInput').value
+    .trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+
+  if(code.length < 4){
+    wfSetOnlineStatus('Enter the room code supplied by Player 1.', true);
+    return;
+  }
+
+  wfSetOnlineStatus('Connecting to room ' + code + '...');
+  wfSetRole('client', code);
+
+  try{
+    await wfLoadPeerJS();
+
+    wfPeer = new Peer({
+      debug: 1,
+      config: {
+        iceServers: [{urls:'stun:stun.l.google.com:19302'}]
+      }
+    });
+
+    wfPeer.on('open', ()=>{
+      const hostId = 'wf-' + code.toLowerCase();
+      wfHostPlayerId = hostId;
+      const conn = wfPeer.connect(hostId, {
+        reliable:true,
+        serialization:'json',
+        metadata:{role:'player2'}
+      });
+      wfSetupConnection(conn);
+    });
+
+    wfPeer.on('error', err=>{
+      console.warn('[Wavefighter PeerJS] Join error:', err);
+      wfSetOnlineStatus(
+        err.type === 'peer-unavailable'
+          ? 'Room not found. Check the code and make sure Player 1 is hosting.'
+          : ('Join error: ' + (err.message || err.type || 'unknown error')),
+        true
+      );
+      if(err.type === 'peer-unavailable'){
+        wfRole = 'solo';
+        wfShowStartLobby();
+      }
+    });
+  }catch(err){
+    wfPeer = null;
+    wfSetRole('solo');
+    wfSetOnlineStatus(err.message || 'PeerJS could not be loaded.', true);
+  }
+}
+
+function wfAcceptInvite(){
+  if(!wfPendingConn) return;
+
+  wfConn = wfPendingConn;
+  wfPendingConn = null;
+  document.getElementById('hostInviteOverlay').classList.add('hidden');
+  wfSend({
+    type:'join-accepted',
+    protocol:1,
+    roomCode:wfRoomCode,
+    hostAuthoritative:true
+  });
+  wfSetOnlineStatus('Player 2 accepted. You are the authoritative host.');
+  wfStartGameAs('host');
+}
+
+function wfDeclineInvite(){
+  if(wfPendingConn){
+    try{ wfPendingConn.send({type:'join-declined',reason:'Host declined the invitation.'}); }catch(_){}
+    setTimeout(()=>{ try{ wfPendingConn.close(); }catch(_){} }, 100);
+    wfPendingConn = null;
+  }
+  document.getElementById('hostInviteOverlay').classList.add('hidden');
+  wfSetOnlineStatus('Join request declined.');
+}
+
+function wfCancelJoin(){
+  if(wfConn){ try{ wfConn.close(); }catch(_){} }
+  if(wfPeer){ try{ wfPeer.destroy(); }catch(_){} }
+  wfConn = null;
+  wfPeer = null;
+  wfRole = 'solo';
+  wfSetRole('solo');
+  wfSetOnlineStatus('Online join cancelled.');
+  wfShowStartLobby();
+}
+
+// --- Multiplayer input tracking for client ---
+// We'll track keys separately for multiplayer
+const mpKeys = {};
+
+// Override keydown/keyup to track for multiplayer
+const originalKeydown = document.addEventListener;
+document.addEventListener('keydown', function(e) {
+  mpKeys[e.code] = true;
+});
+document.addEventListener('keyup', function(e) {
+  mpKeys[e.code] = false;
+});
+
+// --- Send client inputs to host every frame ---
+function wfSendClientInputs() {
+  if (wfRole === 'client' && wfConn && wfConn.open) {
+    // Only send if we're in the game
+    if (gameStarted && player.alive) {
+      wfConn.send({
+        type: 'INPUT',
+        keys: mpKeys
+      });
+    }
+  }
+}
+
+// --- Host processes client inputs ---
+function wfProcessClientInputs() {
+  if (wfRole === 'host' && wfConn && wfConn.open) {
+    // Client's keys are stored in wfClientKeys
+    // We'll apply them to the client's player position in the game loop
+    // The client player is represented as a second player in the game
+    // For now, we'll track a separate position for the client
+    if (!window.wfClientPos) {
+      window.wfClientPos = { x: 10, z: 10, yaw: 0 };
+    }
+    const speed = 5.2;
+    const keys = wfClientKeys || {};
+    let dx = 0, dz = 0;
+    if (keys['KeyW'] || keys['ArrowUp']) dz -= speed;
+    if (keys['KeyS'] || keys['ArrowDown']) dz += speed;
+    if (keys['KeyA'] || keys['ArrowLeft']) dx -= speed;
+    if (keys['KeyD'] || keys['ArrowRight']) dx += speed;
+    
+    // Clamp inside arena
+    const half = ARENA_HALF - 2;
+    window.wfClientPos.x = Math.max(-half, Math.min(half, window.wfClientPos.x + dx * 0.016));
+    window.wfClientPos.z = Math.max(-half, Math.min(half, window.wfClientPos.z + dz * 0.016));
+    
+    // Send state update to client
+    wfConn.send({
+      type: 'STATE_UPDATE',
+      players: {
+        [wfHostPlayerId]: {
+          x: player.pos.x,
+          z: player.pos.z,
+          yaw: player.yaw
+        }
+      }
+    });
+  }
+}
+
+// Store host position for client rendering
+window.wfHostPos = { x: 0, z: 0, yaw: 0 };
+
+// Hook into the game loop for multiplayer updates
+const originalFrame = window.frame || function(){};
+
+// Override frame to include multiplayer updates
+// We'll patch this after the game is initialized
+
+document.getElementById('hostOnlineBtn').addEventListener('click', wfHostRoom);
+document.getElementById('joinOnlineBtn').addEventListener('click', wfJoinRoom);
+document.getElementById('acceptInviteBtn').addEventListener('click', wfAcceptInvite);
+document.getElementById('declineInviteBtn').addEventListener('click', wfDeclineInvite);
+document.getElementById('cancelJoinBtn').addEventListener('click', wfCancelJoin);
+
+document.getElementById('roomCodeInput').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') wfJoinRoom();
+});
+
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -378,7 +853,6 @@ function startBackgroundMusic() {
   if (musicStarted) return;
   musicStarted = true;
 
-  // 90s Rush-2 style upbeat techno progression in A minor (A, F, C, G)
   const bassNotes = [110, 110, 87.31, 87.31, 130.81, 130.81, 98.00, 98.00]; 
   const leadMelody = [440, 523.25, 659.25, 523.25, 587.33, 659.25, 783.99, 659.25];
   let step = 0;
@@ -389,7 +863,6 @@ function startBackgroundMusic() {
     if (!gameStarted || paused || !player.alive) return;
     const now = audioCtx.currentTime;
 
-    // 1. Kick Drum
     if (step % 4 === 0) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -401,7 +874,6 @@ function startBackgroundMusic() {
       osc.start(now); osc.stop(now + 0.18);
     }
 
-    // 2. Hi-hat
     if (step % 4 === 2) {
       const bufferSize = audioCtx.sampleRate * 0.04;
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -418,7 +890,6 @@ function startBackgroundMusic() {
       noise.start(now); noise.stop(now + 0.04);
     }
 
-    // 3. Bassline
     const bFreq = bassNotes[Math.floor(step / 2) % bassNotes.length];
     const bass = audioCtx.createOscillator();
     bass.type = 'sawtooth';
@@ -433,7 +904,6 @@ function startBackgroundMusic() {
     bass.connect(filter); filter.connect(bassGain); bassGain.connect(audioCtx.destination);
     bass.start(now); bass.stop(now + stepTime);
 
-    // 4. Synth Lead
     if (step % 2 === 0) {
       const lFreq = leadMelody[(step / 2) % leadMelody.length];
       const lead = audioCtx.createOscillator();
@@ -451,7 +921,7 @@ function startBackgroundMusic() {
 }
 
 /* =========================================================
-   VIEWMODEL SYSTEM (Weapons rendered on screen)
+   VIEWMODEL SYSTEM
 ========================================================= */
 const viewmodelGroup = new THREE.Group();
 camera.add(viewmodelGroup); 
@@ -588,7 +1058,6 @@ function updateViewmodelVisibility() {
     if (ltSpell) matMagicLT.color.setHex(ltSpell.color);
   }
 }
-/* ========================================================= */
 
 function resize(){
   renderer.setSize(innerWidth, innerHeight);
@@ -789,6 +1258,22 @@ function drawRadar(){
   radarCtx.closePath();
   radarCtx.fillStyle = '#ffffff';
   radarCtx.fill();
+
+  // Draw remote player on radar if in multiplayer
+  if (wfRole === 'client' && window.wfHostPos) {
+    const rp = worldToRadar(window.wfHostPos.x, window.wfHostPos.z);
+    radarCtx.beginPath();
+    radarCtx.arc(rp.rx, rp.ry, 4, 0, Math.PI*2);
+    radarCtx.fillStyle = '#ff8800';
+    radarCtx.fill();
+  }
+  if (wfRole === 'host' && window.wfClientPos) {
+    const rp = worldToRadar(window.wfClientPos.x, window.wfClientPos.z);
+    radarCtx.beginPath();
+    radarCtx.arc(rp.rx, rp.ry, 4, 0, Math.PI*2);
+    radarCtx.fillStyle = '#ff8800';
+    radarCtx.fill();
+  }
 }
 
 function resolveWallCollision(pos, margin){
@@ -857,30 +1342,24 @@ const ARROW_TYPES = [
   {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
 
-/* SPELLS ARE NOW UPGRADABLE TO LEVEL 3 */
 const RT_SPELLS = [
-  {id:'sp_fireball', name:'Fireball', baseDmg:[15, 25, 45], maxDmg:[30, 50, 90], splash:[0, 2.5, 5.0], manaCost:15, color:0xff6a2b, costs:[0, 150, 300], maxLevel:3, level:1},
-  {id:'sp_ice', name:'Ice Spike', baseDmg:[10, 20, 35], maxDmg:[35, 50, 75], splash:[0, 2.5, 5.0], manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, costs:[150, 250, 400], maxLevel:3, level:0},
-  {id:'sp_lightning', name:'Lightning', baseDmg:[15, 25, 40], maxDmg:[45, 65, 90], manaCost:18, color:0xfff44a, chainRange:[0, 4.5, 8], maxChain:[0, 2, 4], stunTime:[0.3, 0.6, 1.0], chainFalloff:0.65, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_fireball', name:'Fireball', baseDmg:20, maxDmg:60, baseSplash:2.5, maxSplash:4.5, manaCost:15, color:0xff6a2b, cost:0, unlocked:true},
+  {id:'sp_ice', name:'Ice Spike', baseDmg:10, maxDmg:35, manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, cost:150, unlocked:false},
+  {id:'sp_lightning', name:'Lightning', baseDmg:15, maxDmg:45, manaCost:18, color:0xfff44a, chainRange:6, maxChain:3, stunTime:0.6, chainFalloff:0.65, cost:300, unlocked:false},
 ];
 
 const LT_SPELLS = [
-  {id:'sp_air', name:'Air Burst', dmg:[8, 15, 25], radius:[4, 6, 9], knockback:[2, 4.5, 8], stun:[0.5, 1.2, 2.0], manaCost:15, cd:1.2, color:0xffffff, costs:[0, 100, 200], maxLevel:3, level:1},
-  {id:'sp_poison', name:'Poison Bolt', dmg:[5, 10, 15], splash:[0, 2.5, 5.0], dot:{dmg:[3, 5, 8],time:4}, slow:{factor:[0.5, 0.65, 0.8],time:3}, manaCost:12, cd:0.5, color:0x8aff6a, costs:[120, 220, 350], maxLevel:3, level:0},
-  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false}, /* Teleport stays simple boolean */
-  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:[3, 5, 8], color:0x66d9ff, costs:[300, 400, 550], maxLevel:3, level:0},
+  {id:'sp_air', name:'Air Burst', dmg:8, radius:6, knockback:4, stun:1.2, manaCost:15, cd:1.2, color:0xffffff, cost:0, unlocked:true},
+  {id:'sp_poison', name:'Poison Bolt', dmg:5, dot:{dmg:3,time:4}, slow:{factor:0.7,time:3}, manaCost:12, cd:0.5, color:0x8aff6a, cost:120, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:8, color:0x66d9ff, cost:300, unlocked:false},
 ];
 
 function getUnlockedFPS(){ return FPS_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedMelee(){ return MELEE_WEAPONS.filter(w=>w.unlocked || gameMode==='unlimited'); }
 function getUnlockedArrows(){ return ARROW_TYPES.filter(a=>a.unlocked || gameMode==='unlimited'); }
-
-function getSpellLevel(spell) {
-  if (gameMode === 'unlimited') return spell.maxLevel || 1;
-  return spell.maxLevel ? spell.level : (spell.unlocked ? 1 : 0);
-}
-function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>getSpellLevel(s)>0); }
-function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>getSpellLevel(s)>0); }
+function getUnlockedRTSpells(){ return RT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
+function getUnlockedLTSpells(){ return LT_SPELLS.filter(s=>s.unlocked || gameMode==='unlimited'); }
 
 const DEFAULT_KEY_BINDINGS = {
   moveForward:'KeyW', moveBack:'KeyS', moveLeft:'KeyA', moveRight:'KeyD',
@@ -988,6 +1467,9 @@ function closeSettings(){
 
 const keys = {};
 addEventListener('keydown', e=>{
+  // Also track for multiplayer
+  mpKeys[e.code] = true;
+  
   if(listeningForKey){
     if(e.code !== 'Escape'){ keyBindings[listeningForKey] = e.code; saveKeyBindings(); }
     listeningForKey = null;
@@ -999,7 +1481,10 @@ addEventListener('keydown', e=>{
   if(!gameStarted && !settingsOpen && e.code==='Enter'){ enterArena(false); return; }
   handleKeyAction(e.code);
 });
-addEventListener('keyup', e=>{ keys[e.code]=false; });
+addEventListener('keyup', e=>{ 
+  keys[e.code]=false;
+  mpKeys[e.code]=false;
+});
 
 let pointerLocked = false;
 canvas.addEventListener('click', ()=>{
@@ -1231,47 +1716,39 @@ function fireFlameStream(){
   }
 }
 function fireFireballCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_fireball');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[0];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
+  const splash = spell.baseSplash + (spell.maxSplash-spell.baseSplash)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.8 + frac*0.9 + lvl*0.25);
+  mesh.scale.setScalar(0.8+frac*0.9);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(22), dmg, friendly:true, life:3, splash});
 }
 function fireIceSpikeCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_ice');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const splash = spell.splash[lvl];
+  const spell = RT_SPELLS[1];
+  const dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.7 + frac*0.6 + lvl*0.2);
+  mesh.scale.setScalar(0.7+frac*0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:splash,
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(30), dmg, friendly:true, life:3, splash:0,
     onHit:(e)=>{
       if(frac >= spell.freezeThreshold){ e.frozenTimer = spell.freezeTime; showMsg('FROZEN SOLID!'); }
       else { e.slowTimer = 2; e.slowFactor = 0.5; showMsg('CHILLED'); }
     }});
 }
 function firePoisonBolt(){
-  const spell = LT_SPELLS.find(s=>s.id==='sp_poison');
-  const lvl = getSpellLevel(spell) - 1;
-  const dmg = spell.dmg[lvl];
-  const splash = spell.splash[lvl];
-  const dotDmg = spell.dot.dmg[lvl];
-  const slowFactor = spell.slow.factor[lvl];
+  const spell = LT_SPELLS[1];
   const dir = getForward();
   const mat = new THREE.MeshBasicMaterial({color:spell.color});
   const mesh = new THREE.Mesh(geoBall, mat);
-  mesh.scale.setScalar(0.6 + lvl*0.15);
+  mesh.scale.setScalar(0.6);
   mesh.position.copy(player.pos).add(dir.clone().multiplyScalar(0.6));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:dmg, friendly:true, life:3, splash:splash,
-    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=dotDmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=slowFactor; }});
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:spell.dmg, friendly:true, life:3, splash:0,
+    onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=spell.dot.dmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=spell.slow.factor; }});
 }
 function fireEnemyBolt(e){
   const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
@@ -1280,12 +1757,8 @@ function fireEnemyBolt(e){
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(14), dmg:9, friendly:false, life:4, splash:0});
 }
 function fireLightningCharged(frac){
-  const spell = RT_SPELLS.find(s=>s.id==='sp_lightning');
-  const lvl = getSpellLevel(spell) - 1;
-  let dmg = spell.baseDmg[lvl] + (spell.maxDmg[lvl]-spell.baseDmg[lvl])*frac;
-  const maxChain = spell.maxChain[lvl];
-  const chainRange = spell.chainRange[lvl];
-  const stunTime = spell.stunTime[lvl];
+  const spell = RT_SPELLS[2];
+  let dmg = spell.baseDmg + (spell.maxDmg-spell.baseDmg)*frac;
   const dir = getForward();
   const origin = player.pos.clone();
   raycaster.set(origin, dir);
@@ -1300,16 +1773,15 @@ function fireLightningCharged(frac){
   if(!current){ return; }
   const points = [origin.clone()];
   const hitSet = new Set();
-  
-  for(let chain=0; chain<=maxChain; chain++){
+  for(let chain=0; chain<=spell.maxChain; chain++){
     if(!current || !current.alive) break;
     const partType = hitMesh.userData?.partType || 'body';
     damageEnemy(current, dmg, partType);
-    current.stunTimer = Math.max(current.stunTimer, stunTime);
+    current.stunTimer = Math.max(current.stunTimer, spell.stunTime);
     hitSet.add(current);
     points.push(current.mesh.position.clone().setY(1));
     dmg *= spell.chainFalloff;
-    let next = null, bestD = chainRange;
+    let next = null, bestD = spell.chainRange;
     for(const e2 of enemies){
       if(!e2.alive || hitSet.has(e2)) continue;
       const d = e2.mesh.position.distanceTo(current.mesh.position);
@@ -1365,7 +1837,7 @@ document.getElementById('bestWave').textContent = bestWave;
 document.getElementById('bestScore').textContent = bestScore;
 
 const GAME_MODES = {
-  unlimited: 'Classic — infinite ammo and mana. Everything unlocked and maxed.',
+  unlimited: 'Classic — infinite ammo and mana. Everything unlocked.',
   ammo: 'Progression — start with basics, earn points to buy upgrades!',
   precision: 'Progression — unlimited ammo, but spamming lowers score multiplier.',
 };
@@ -1655,8 +2127,8 @@ function updateHudStyle(){
     const rt = unlockedRT[player.rtSpellIndex] || unlockedRT[0];
     const unlockedLT = getUnlockedLTSpells();
     const lt = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
-    wname = 'RT: ' + (rt.maxLevel ? `${rt.name} (Lv.${getSpellLevel(rt)})` : rt.name);
-    sub = 'LT: ' + (lt.maxLevel ? `${lt.name} (Lv.${getSpellLevel(lt)})` : lt.name);
+    wname = 'RT: ' + rt.name;
+    sub = 'LT: ' + lt.name;
   }
   document.getElementById('weaponName').textContent = wname;
   document.getElementById('subLine').textContent = sub;
@@ -1807,30 +2279,23 @@ function castLTSpell(){
   const spell = unlockedLT[player.ltSpellIndex] || unlockedLT[0];
   if(player.mana < spell.manaCost){ showMsg('NOT ENOUGH MANA'); return; }
   if(player.cooldowns.secondary > 0) return;
-
-  const lvl = getSpellLevel(spell) - 1;
-
   if(spell.id==='sp_air'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    const radius = spell.radius[lvl];
-    const dmg = spell.dmg[lvl];
-    const stun = spell.stun[lvl];
-    const knockback = spell.knockback[lvl];
     spawnRing(0xffffff);
     flashScreen('220,220,255',0.15);
     applyPrecisionDecay();
     for(const e of enemies){
       if(!e.alive) continue;
       const d = e.mesh.position.distanceTo(player.pos);
-      if(d < radius){
-        damageEnemy(e, dmg, 'body');
-        e.stunTimer = stun;
+      if(d < spell.radius){
+        damageEnemy(e, spell.dmg, 'body');
+        e.stunTimer = spell.stun;
         const dir = e.mesh.position.clone().sub(player.pos).setY(0).normalize();
         
         raycaster.set(e.mesh.position.clone().setY(1), dir);
-        raycaster.far = knockback;
+        raycaster.far = spell.knockback;
         const hits = raycaster.intersectObjects(wallMeshes, true);
-        let actualKnockback = knockback;
+        let actualKnockback = spell.knockback;
         if(hits.length > 0) {
             actualKnockback = Math.max(0, hits[0].distance - 0.7);
         }
@@ -1848,7 +2313,7 @@ function castLTSpell(){
     doTeleport();
   } else if(spell.id==='sp_aegis'){
     player.mana -= spell.manaCost; player.cooldowns.secondary = spell.cd;
-    player.shieldTimer = spell.duration[lvl];
+    player.shieldTimer = spell.duration;
     showMsg('AEGIS SHIELD');
     flashScreen('120,220,255',0.25);
   }
@@ -1912,10 +2377,15 @@ function doSecondaryRelease(){
 const moveVec = new THREE.Vector3();
 function updateMovement(dt){
   let mx=0, my=0;
-  if(keys[keyBindings.moveForward]) my -= 1;
-  if(keys[keyBindings.moveBack]) my += 1;
-  if(keys[keyBindings.moveLeft]) mx -= 1;
-  if(keys[keyBindings.moveRight]) mx += 1;
+  
+  // Local player movement (host uses keys, client uses keys for local but sends to host)
+  if (wfRole === 'host' || wfRole === 'solo') {
+    if(keys[keyBindings.moveForward]) my -= 1;
+    if(keys[keyBindings.moveBack]) my += 1;
+    if(keys[keyBindings.moveLeft]) mx -= 1;
+    if(keys[keyBindings.moveRight]) mx += 1;
+  }
+  
   if(gp){
     const lx = gp.axes[0]||0, ly = gp.axes[1]||0;
     if(Math.abs(lx)>0.15) mx += lx;
@@ -2020,10 +2490,7 @@ function updateProjectiles(dt){
           if(p.splash>0){
             for(const e2 of enemies){
               if(!e2.alive || e2===e) continue;
-              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) {
-                 damageEnemy(e2, p.dmg*0.5, 'body');
-                 if(p.onHit) p.onHit(e2); /* Splash effect application! */
-              }
+              if(e2.mesh.position.distanceTo(e.mesh.position) < p.splash) damageEnemy(e2, p.dmg*0.5, 'body');
             }
           }
           remove = true; break;
@@ -2279,60 +2746,26 @@ function buildShopUI(){
     meleeList.appendChild(item);
   });
 
-  /* BUILD SPELL UPGRADES UI */
   RT_SPELLS.concat(LT_SPELLS).forEach(w=>{
     const item = document.createElement('div');
     item.className = 'shopItem';
-    
-    if (w.maxLevel) {
-      const currentLvl = (gameMode==='unlimited') ? w.maxLevel : w.level;
-      const isMaxed = currentLvl >= w.maxLevel;
-      const title = `${w.name} (Lv. ${currentLvl})`;
-      let costText = 'MAXED';
-      let canAfford = false;
-      let btnText = isMaxed ? 'MAXED' : (currentLvl === 0 ? 'BUY' : 'UPGRADE');
-      
-      if (!isMaxed) {
-        const nextCost = w.costs[currentLvl];
-        costText = nextCost + ' PTS';
-        canAfford = state.score >= nextCost;
-      }
-      
-      item.innerHTML = `<div><span class="itemTitle">${title}</span><span class="itemSub">${costText}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isMaxed ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = btnText;
-      
-      if (!isMaxed && canAfford) {
-        btn.addEventListener('click', ()=>{
-          state.score -= w.costs[currentLvl];
-          w.level++;
-          buildShopUI();
-          updateHudStyle();
-        });
-      }
-      item.appendChild(btn);
-      
-    } else {
-      const isUnlocked = w.unlocked || gameMode==='unlimited';
-      const canAfford = state.score >= w.cost;
-      item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
-      const btn = document.createElement('button');
-      btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
-      btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
-      if(!isUnlocked && canAfford){
-        btn.addEventListener('click', ()=>{
-          state.score -= w.cost;
-          w.unlocked = true;
-          buildShopUI();
-        });
-      }
-      item.appendChild(btn);
+    const isUnlocked = w.unlocked || gameMode==='unlimited';
+    const canAfford = state.score >= w.cost;
+    item.innerHTML = `<div><span class="itemTitle">${w.name}</span><span class="itemSub">${w.cost>0?w.cost+' PTS':'FREE'}</span></div>`;
+    const btn = document.createElement('button');
+    btn.className = 'shopBuyBtn' + (isUnlocked ? ' bought' : (!canAfford ? ' cant' : ''));
+    btn.textContent = isUnlocked ? 'OWNED' : 'BUY';
+    if(!isUnlocked && canAfford){
+      btn.addEventListener('click', ()=>{
+        state.score -= w.cost;
+        w.unlocked = true;
+        buildShopUI();
+      });
     }
+    item.appendChild(btn);
     magicList.appendChild(item);
   });
 
-  // HEALTH PACK SHOP ITEM
   const hpItem = document.createElement('div');
   hpItem.className = 'shopItem';
   const canAffordHp = state.score >= 50 && player.hp < player.maxHp;
@@ -2431,8 +2864,8 @@ function saveState() {
       fps: FPS_WEAPONS.map(w => w.unlocked),
       melee: MELEE_WEAPONS.map(w => w.unlocked),
       arrows: ARROW_TYPES.map(w => w.unlocked),
-      rt: RT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked),
-      lt: LT_SPELLS.map(w => w.maxLevel ? w.level : w.unlocked)
+      rt: RT_SPELLS.map(w => w.unlocked),
+      lt: LT_SPELLS.map(w => w.unlocked)
     }
   };
   localStorage.setItem('tf_savestate', JSON.stringify(data));
@@ -2485,20 +2918,8 @@ function loadState() {
       FPS_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.fps[i]);
       MELEE_WEAPONS.forEach((w,i) => w.unlocked = data.unlocks.melee[i]);
       ARROW_TYPES.forEach((w,i) => w.unlocked = data.unlocks.arrows[i]);
-      RT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.rt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.rt[i];
-      });
-      LT_SPELLS.forEach((w,i) => {
-          if (w.maxLevel) {
-              const saved = data.unlocks.lt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
-              else w.level = saved || (w.costs[0]===0?1:0);
-          } else w.unlocked = data.unlocks.lt[i];
-      });
+      RT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.rt[i]);
+      LT_SPELLS.forEach((w,i) => w.unlocked = data.unlocks.lt[i]);
   }
 
   for(const e of enemies) { scene.remove(e.mesh); }
@@ -2551,6 +2972,13 @@ function frame(now){
   const dt = Math.min(0.05, (now-lastT)/1000);
   lastT = now;
   pollGamepad();
+
+  // --- Multiplayer processing ---
+  if (wfRole === 'host') {
+    wfProcessClientInputs();
+  } else if (wfRole === 'client') {
+    wfSendClientInputs();
+  }
 
   if(settingsOpen){
     if(listeningForGamepad && gp){
@@ -2648,9 +3076,15 @@ function enterArena(useTouch){
   player.ltSpellIndex = 0;
   
   gameStarted = true;
+  const networkHudTag = document.getElementById('networkHudTag');
+  if(networkHudTag){
+    networkHudTag.textContent =
+      wfRole === 'host' ? 'ONLINE • HOST / AUTHORITY' :
+      wfRole === 'client' ? 'ONLINE • PLAYER 2' : '';
+  }
   updateHudStyle();
   startWave();
-  startBackgroundMusic(); // Kicks off the 90s techno synth music!
+  startBackgroundMusic();
   if(!useTouch && canvas.requestPointerLock) canvas.requestPointerLock();
 }
 
