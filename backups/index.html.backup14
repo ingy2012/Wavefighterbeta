@@ -773,8 +773,8 @@ function drawRadar(){
     if(!e.alive) continue;
     const p = worldToRadar(e.mesh.position.x, e.mesh.position.z);
     radarCtx.beginPath();
-    radarCtx.arc(p.rx, p.ry, e.type==='melee'?3:3.5, 0, Math.PI*2);
-    radarCtx.fillStyle = e.type === 'gun' ? '#c060ff' : (e.type === 'magic' ? '#50a0ff' : '#ff5050');
+    radarCtx.arc(p.rx, p.ry, e.ranged?3.5:3, 0, Math.PI*2);
+    radarCtx.fillStyle = e.ranged ? '#c060ff' : '#ff5050';
     radarCtx.fill();
   }
   const pp = worldToRadar(player.pos.x, player.pos.z);
@@ -857,6 +857,7 @@ const ARROW_TYPES = [
   {id:'arr_poison', name:'Poison Arrow', color:0x8aff6a, dot:{dmg:3,time:4}, slow:{factor:0.8,time:2}, cost:260, unlocked:false},
 ];
 
+/* SPELLS ARE NOW UPGRADABLE TO LEVEL 3 */
 const RT_SPELLS = [
   {id:'sp_fireball', name:'Fireball', baseDmg:[15, 25, 45], maxDmg:[30, 50, 90], splash:[0, 2.5, 5.0], manaCost:15, color:0xff6a2b, costs:[0, 150, 300], maxLevel:3, level:1},
   {id:'sp_ice', name:'Ice Spike', baseDmg:[10, 20, 35], maxDmg:[35, 50, 75], splash:[0, 2.5, 5.0], manaCost:15, color:0x8adfff, freezeThreshold:0.7, freezeTime:4, costs:[150, 250, 400], maxLevel:3, level:0},
@@ -866,7 +867,7 @@ const RT_SPELLS = [
 const LT_SPELLS = [
   {id:'sp_air', name:'Air Burst', dmg:[8, 15, 25], radius:[4, 6, 9], knockback:[2, 4.5, 8], stun:[0.5, 1.2, 2.0], manaCost:15, cd:1.2, color:0xffffff, costs:[0, 100, 200], maxLevel:3, level:1},
   {id:'sp_poison', name:'Poison Bolt', dmg:[5, 10, 15], splash:[0, 2.5, 5.0], dot:{dmg:[3, 5, 8],time:4}, slow:{factor:[0.5, 0.65, 0.8],time:3}, manaCost:12, cd:0.5, color:0x8aff6a, costs:[120, 220, 350], maxLevel:3, level:0},
-  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false},
+  {id:'sp_teleport', name:'Teleport', manaCost:20, cd:4, color:0xffffff, cost:220, unlocked:false}, /* Teleport stays simple boolean */
   {id:'sp_aegis', name:'Aegis Shield', manaCost:40, cd:22, duration:[3, 5, 8], color:0x66d9ff, costs:[300, 400, 550], maxLevel:3, level:0},
 ];
 
@@ -1055,15 +1056,10 @@ function gpButtonHeld(i){ return gp && gp.buttons[i] && gp.buttons[i].pressed; }
 
 let enemies = [];
 
-function makeEnemy(type){
+function makeEnemy(ranged){
   const grp = new THREE.Group();
-  
-  let baseHex = 0xdd3b3b; 
-  let emHex = 0x330000;
-  if (type === 'gun') { baseHex = 0x9b3bdd; emHex = 0x220033; }
-  else if (type === 'magic') { baseHex = 0x3ba7ff; emHex = 0x002244; }
-
-  const mat = new THREE.MeshStandardMaterial({color: baseHex, emissive: emHex});
+  const baseHex = ranged ? 0x9b3bdd : 0xdd3b3b;
+  const mat = new THREE.MeshStandardMaterial({color: baseHex, emissive: ranged ? 0x220033 : 0x330000});
 
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.3), mat);
   torso.position.y = 1.05; torso.castShadow = true;
@@ -1073,77 +1069,25 @@ function makeEnemy(type){
   head.position.y = 1.62; head.castShadow = true;
   head.userData = { partType: 'head' };
 
-  /* ARM PIVOTS (Positioned at the shoulders) */
-  const leftArmGrp = new THREE.Group();
-  leftArmGrp.position.set(-0.35, 1.3, 0); // Left shoulder
   const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
-  leftArm.position.set(0, -0.25, 0); leftArm.castShadow = true;
+  leftArm.position.set(-0.35, 1.05, 0); leftArm.castShadow = true;
   leftArm.userData = { partType: 'limb' };
-  leftArmGrp.add(leftArm);
 
-  const rightArmGrp = new THREE.Group();
-  rightArmGrp.position.set(0.35, 1.3, 0); // Right shoulder
   const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.6, 0.15), mat);
-  rightArm.position.set(0, -0.25, 0); rightArm.castShadow = true;
+  rightArm.position.set(0.35, 1.05, 0); rightArm.castShadow = true;
   rightArm.userData = { partType: 'limb' };
-  rightArmGrp.add(rightArm);
 
-  /* Add visual weapons connected to the right/left hand (relative to shoulder group) */
-  if (type === 'melee') {
-    const swordGeo = new THREE.BoxGeometry(0.06, 0.9, 0.12);
-    const swordMat = new THREE.MeshStandardMaterial({color: 0xcccccc, roughness: 0.4, metalness: 0.6});
-    const sword = new THREE.Mesh(swordGeo, swordMat);
-    sword.position.set(0, -0.6, -0.3);
-    sword.rotation.x = Math.PI / 2;
-    rightArmGrp.add(sword);
-  } else if (type === 'gun') {
-    const gunGrp = new THREE.Group();
-    const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.35), new THREE.MeshStandardMaterial({color:0x222222}));
-    const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5), new THREE.MeshStandardMaterial({color:0x555555}));
-    gunBarrel.rotation.x = Math.PI/2;
-    gunBarrel.position.set(0, 0.04, -0.25);
-    gunGrp.add(gunBody, gunBarrel);
-    gunGrp.position.set(0, -0.6, -0.15); // Place in hand
-    rightArmGrp.add(gunGrp);
-  } else if (type === 'magic') {
-    const orbGeo = new THREE.SphereGeometry(0.18, 8, 8);
-    const orbMat = new THREE.MeshBasicMaterial({color: 0x66d9ff, transparent:true, opacity:0.9});
-    const orb = new THREE.Mesh(orbGeo, orbMat);
-    orb.position.set(0, -0.6, -0.1);
-    rightArmGrp.add(orb);
-    
-    // Mages hold an orb in BOTH hands
-    const orb2 = orb.clone();
-    leftArmGrp.add(orb2);
-  }
-
-  /* LEG PIVOTS (Positioned at the hips) */
-  const leftLegGrp = new THREE.Group();
-  leftLegGrp.position.set(-0.15, 0.7, 0); // Left hip
   const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
-  leftLeg.position.set(0, -0.35, 0); leftLeg.castShadow = true;
+  leftLeg.position.set(-0.15, 0.35, 0); leftLeg.castShadow = true;
   leftLeg.userData = { partType: 'limb' };
-  leftLegGrp.add(leftLeg);
 
-  const rightLegGrp = new THREE.Group();
-  rightLegGrp.position.set(0.15, 0.7, 0); // Right hip
   const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.18), mat);
-  rightLeg.position.set(0, -0.35, 0); rightLeg.castShadow = true;
+  rightLeg.position.set(0.15, 0.35, 0); rightLeg.castShadow = true;
   rightLeg.userData = { partType: 'limb' };
-  rightLegGrp.add(rightLeg);
 
-  grp.add(torso, head, leftArmGrp, rightArmGrp, leftLegGrp, rightLegGrp);
-  
-  // Store the meshes so the hit detection can easily tint the emissive color
+  grp.add(torso, head, leftArm, rightArm, leftLeg, rightLeg);
   grp.userData.parts = [torso, head, leftArm, rightArm, leftLeg, rightLeg];
   grp.userData.mat = mat;
-  
-  // Store the pivot groups so we can effortlessly rotate the limbs
-  grp.userData.lArmGrp = leftArmGrp;
-  grp.userData.rArmGrp = rightArmGrp;
-  grp.userData.lLegGrp = leftLegGrp;
-  grp.userData.rLegGrp = rightLegGrp;
-  
   return grp;
 }
 
@@ -1170,35 +1114,19 @@ function spawnWaveEnemies(){
   const count = Math.min(3 + wave*2, 26);
   const hp = 18 + wave*4;
   const speed = 2.0 + Math.min(wave*0.05, 2.2);
-  
-  const gunChance = Math.min(0.05 + wave*0.05, 0.35);
-  const magicChance = Math.min(0.02 + wave*0.03, 0.25);
-  
+  const rangedChance = Math.min(0.08 + wave*0.045, 0.5);
   state.enemiesRemaining = count;
   for(let i=0;i<count;i++){
-    const r = Math.random();
-    let type = 'melee';
-    if(r < magicChance) type = 'magic';
-    else if(r < magicChance + gunChance) type = 'gun';
-    
+    const ranged = Math.random() < rangedChance;
     const p = validEdgePoint();
-    const mesh = makeEnemy(type);
+    const mesh = makeEnemy(ranged);
     mesh.position.set(p.x, 0, p.z);
     scene.add(mesh);
-    
-    let prefRange = 1.4;
-    if(type === 'gun') prefRange = 10 + Math.random()*5;
-    if(type === 'magic') prefRange = 8 + Math.random()*4;
-    
-    let baseColorHex = 0xdd3b3b;
-    if(type === 'gun') baseColorHex = 0x9b3bdd;
-    if(type === 'magic') baseColorHex = 0x3ba7ff;
-
     enemies.push({
-      mesh, hp, maxHp:hp, speed: speed*(type==='melee'?1:0.85),
-      type, attackCd:0, alive:true,
-      preferredRange: prefRange,
-      baseColorHex: baseColorHex,
+      mesh, hp, maxHp:hp, speed: speed*(ranged?0.85:1),
+      ranged, attackCd:0, alive:true,
+      preferredRange: ranged ? (7+Math.random()*4) : 1.4,
+      baseColorHex: ranged?0x9b3bdd:0xdd3b3b,
       frozenTimer:0, stunTimer:0, dotTimer:0, dotDmg:0, dotAcc:0, slowTimer:0, slowFactor:1,
     });
   }
@@ -1219,7 +1147,7 @@ function damageEnemy(e, baseDmg, hitPartType){
   setTimeout(()=>{ 
     if(e.mesh.userData.parts){
       for(const part of e.mesh.userData.parts){
-        part.material.emissive.setHex(e.type==='gun'?0x220033:(e.type==='magic'?0x002244:0x330000));
+        part.material.emissive.setHex(e.ranged?0x220033:0x330000);
       }
     }
   }, 90);
@@ -1257,11 +1185,8 @@ function updateShieldVisual(dt){
 const geoArrow = new THREE.ConeGeometry(0.06,0.6,6);
 const geoBall = new THREE.SphereGeometry(0.22,8,8);
 const geoRocket = new THREE.CylinderGeometry(0.1,0.1,0.5,8);
-
-const geoEnemyBullet = new THREE.SphereGeometry(0.08, 4, 4);
-const matEnemyBullet = new THREE.MeshBasicMaterial({color:0xffcc00});
-const geoEnemySpell = new THREE.SphereGeometry(0.18, 8, 8);
-const matEnemySpell = new THREE.MeshBasicMaterial({color:0x66d9ff});
+const geoEnemyBolt = new THREE.SphereGeometry(0.18,8,8);
+const matEnemyBolt = new THREE.MeshBasicMaterial({color:0xc06aff});
 
 function spawnProjectile(opts){ scene.add(opts.mesh); projectiles.push(opts); }
 
@@ -1297,7 +1222,7 @@ function fireFlameStream(){
   const hits = raycaster.intersectObjects(targets, true);
   if(hits.length){
     const hitMesh = hits[0].object;
-    const e = enemies.find(en=>en.alive && en.mesh.userData.parts.includes(hitMesh));
+    const e = enemies.find(en=>en.alive && (en.mesh===hitMesh.parent || en.mesh===hitMesh));
     if(e){
       const partType = hitMesh.userData?.partType || 'body';
       damageEnemy(e, 2.5, partType);
@@ -1348,21 +1273,12 @@ function firePoisonBolt(){
   spawnProjectile({mesh, vel:dir.clone().multiplyScalar(28), dmg:dmg, friendly:true, life:3, splash:splash,
     onHit:(e)=>{ e.dotTimer=spell.dot.time; e.dotDmg=dotDmg; e.dotAcc=0; e.slowTimer=spell.slow.time; e.slowFactor=slowFactor; }});
 }
-
-function fireEnemyBullet(e){
+function fireEnemyBolt(e){
   const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
-  const mesh = new THREE.Mesh(geoEnemyBullet, matEnemyBullet);
-  // Spawn bullet perfectly aligned with the gun barrel extending from the shoulder pivot
-  mesh.position.copy(e.mesh.position).add(new THREE.Vector3(0.35,1.3,0)).add(dir.clone().multiplyScalar(0.8));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(32), dmg:7, friendly:false, life:3.5, splash:0});
+  const mesh = new THREE.Mesh(geoEnemyBolt, matEnemyBolt);
+  mesh.position.copy(e.mesh.position).add(new THREE.Vector3(0,1.1,0)).add(dir.clone().multiplyScalar(0.6));
+  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(14), dmg:9, friendly:false, life:4, splash:0});
 }
-function fireEnemySpell(e){
-  const dir = player.pos.clone().sub(e.mesh.position).setY(0).normalize();
-  const mesh = new THREE.Mesh(geoEnemySpell, matEnemySpell);
-  mesh.position.copy(e.mesh.position).add(new THREE.Vector3(0.35,1.3,0)).add(dir.clone().multiplyScalar(0.8));
-  spawnProjectile({mesh, vel:dir.clone().multiplyScalar(14), dmg:15, friendly:false, life:5, splash:0});
-}
-
 function fireLightningCharged(frac){
   const spell = RT_SPELLS.find(s=>s.id==='sp_lightning');
   const lvl = getSpellLevel(spell) - 1;
@@ -1380,7 +1296,7 @@ function fireLightningCharged(frac){
   const hits = raycaster.intersectObjects(targets, true);
   if(!hits.length){ showMsg('MISS'); return; }
   const hitMesh = hits[0].object;
-  let current = enemies.find(en=>en.alive && en.mesh.userData.parts.includes(hitMesh));
+  let current = enemies.find(en=>en.alive && (en.mesh===hitMesh.parent || en.mesh===hitMesh));
   if(!current){ return; }
   const points = [origin.clone()];
   const hitSet = new Set();
@@ -1804,7 +1720,7 @@ function hitscanShoot(dmg, spreadAmt){
 
   if(hits.length){
     const hitMesh = hits[0].object;
-    const e = enemies.find(en => en.alive && en.mesh.userData.parts.includes(hitMesh));
+    const e = enemies.find(en => en.alive && (en.mesh === hitMesh.parent || en.mesh === hitMesh));
     if(e){
       const partType = hitMesh.userData?.partType || 'body';
       damageEnemy(e, dmg, partType);
@@ -2042,7 +1958,7 @@ function updateMovement(dt){
   camera.rotation.x = player.pitch;
 }
 
-function updateEnemies(dt, now){
+function updateEnemies(dt){
   for(const e of enemies){
     if(!e.alive) continue;
     e.frozenTimer = Math.max(0, e.frozenTimer-dt);
@@ -2052,71 +1968,20 @@ function updateEnemies(dt, now){
       e.dotTimer -= dt; e.dotAcc += dt;
       if(e.dotAcc>=1){ e.dotAcc-=1; damageEnemy(e, e.dotDmg, 'body'); }
     }
-    
     if(!e.alive) continue;
     const disabled = e.frozenTimer>0 || e.stunTimer>0;
-    const dist = player.pos.clone().setY(0).distanceTo(e.mesh.position.clone().setY(0));
-    
-    // --- ANIMATION CONTROLS ---
-    const rArm = e.mesh.userData.rArmGrp;
-    const lArm = e.mesh.userData.lArmGrp;
-    const rLeg = e.mesh.userData.rLegGrp;
-    const lLeg = e.mesh.userData.lLegGrp;
-    
-    // Defaults (idle/walk cycle logic)
-    let targetRArmX = Math.sin(now * 0.008) * 0.4;
-    let targetLArmX = -Math.sin(now * 0.008) * 0.4;
-    let isMoving = false;
-
     if(!disabled){
       const spd = e.speed * (e.slowTimer>0 ? e.slowFactor : 1);
       const toPlayer = player.pos.clone().setY(0).sub(e.mesh.position.clone().setY(0));
+      const dist = toPlayer.length();
       e.attackCd -= dt;
-      
-      if(e.type === 'gun' || e.type === 'magic'){
-        if(dist > e.preferredRange+1){ 
-          toPlayer.normalize(); 
-          e.mesh.position.addScaledVector(toPlayer, spd*dt); 
-          isMoving = true; 
-        } else if(dist < e.preferredRange-1){ 
-          toPlayer.normalize(); 
-          e.mesh.position.addScaledVector(toPlayer, -spd*dt*0.6); 
-          isMoving = true; 
-        }
-        
-        // Gunner Aiming/Shooting
-        if(e.type === 'gun') {
-          if (dist < e.preferredRange + 5) {
-            targetRArmX = -Math.PI / 2 + 0.1; // Gun up, pointing forward
-            if (e.attackCd > 1.0) targetRArmX -= 0.4; // Recoil tick
-          }
-          if(e.attackCd<=0 && e.slowTimer<=0 && dist < 25){
-             fireEnemyBullet(e); 
-             e.attackCd = 1.2; 
-          }
-        } 
-        // Mage Aiming/Casting
-        else if (e.type === 'magic') {
-          if (dist < e.preferredRange + 5) {
-             targetRArmX = -Math.PI / 2 + 0.2; // Both hands up!
-             targetLArmX = -Math.PI / 2 + 0.2;
-             if (e.attackCd > 2.2) { 
-               targetRArmX -= 0.3; // Thrust hands forward on cast
-               targetLArmX -= 0.3; 
-             }
-          }
-          if(e.attackCd<=0 && e.slowTimer<=0 && dist < 25){
-             fireEnemySpell(e); 
-             e.attackCd = 2.5; 
-          }
-        }
-      } else { 
-        // Melee logic
-        if(dist > 1.3){ 
-          toPlayer.normalize(); 
-          e.mesh.position.addScaledVector(toPlayer, spd*dt); 
-          isMoving = true; 
-        } else if(e.attackCd<=0 && e.slowTimer<=0){
+      if(e.ranged){
+        if(dist > e.preferredRange+1){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
+        else if(dist < e.preferredRange-1){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, -spd*dt*0.6); }
+        if(dist < 22 && e.attackCd<=0 && e.slowTimer<=0){ fireEnemyBolt(e); e.attackCd = 2.2; }
+      } else {
+        if(dist > 1.3){ toPlayer.normalize(); e.mesh.position.addScaledVector(toPlayer, spd*dt); }
+        else if(e.attackCd<=0 && e.slowTimer<=0){
           if(player.shieldTimer > 0){
             flashScreen('120,220,255',0.15);
           } else {
@@ -2127,30 +1992,9 @@ function updateEnemies(dt, now){
           }
           e.attackCd = 0.9;
         }
-        
-        // Melee Swinging
-        if (e.attackCd > 0) {
-          if (e.attackCd > 0.6) targetRArmX = -Math.PI + 0.4; // Wind up over head
-          else targetRArmX = -0.2; // Chop down
-        } else if (dist < 3.0) {
-          targetRArmX = -Math.PI / 4; // Ready guard stance
-        }
       }
       resolveWallCollision(e.mesh.position, 0.6);
     }
-    
-    // Smoothly apply animations
-    rArm.rotation.x += (targetRArmX - rArm.rotation.x) * dt * 15;
-    lArm.rotation.x += (targetLArmX - lArm.rotation.x) * dt * 15;
-    
-    if (isMoving && !disabled) {
-      rLeg.rotation.x = Math.sin(now * 0.015) * 0.6;
-      lLeg.rotation.x = -Math.sin(now * 0.015) * 0.6;
-    } else {
-      rLeg.rotation.x *= 0.8; // Stand still smoothly
-      lLeg.rotation.x *= 0.8;
-    }
-    
     e.mesh.lookAt(player.pos.x, e.mesh.position.y, player.pos.z);
     
     const colHex = e.frozenTimer>0 ? 0x2a6fdd : (e.dotTimer>0 ? 0x66ff66 : (e.slowTimer>0 ? 0xaee8ff : e.baseColorHex));
@@ -2577,7 +2421,7 @@ function saveState() {
     maze: currentMazeData,
     enemies: enemies.filter(e => e.alive).map(e => ({
       x: e.mesh.position.x, y: e.mesh.position.y, z: e.mesh.position.z,
-      hp: e.hp, maxHp: e.maxHp, speed: e.speed, type: e.type,
+      hp: e.hp, maxHp: e.maxHp, speed: e.speed, ranged: e.ranged,
       attackCd: e.attackCd, preferredRange: e.preferredRange,
       baseColorHex: e.baseColorHex, frozenTimer: e.frozenTimer,
       stunTimer: e.stunTimer, dotTimer: e.dotTimer, dotDmg: e.dotDmg,
@@ -2644,14 +2488,14 @@ function loadState() {
       RT_SPELLS.forEach((w,i) => {
           if (w.maxLevel) {
               const saved = data.unlocks.rt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0;
+              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
               else w.level = saved || (w.costs[0]===0?1:0);
           } else w.unlocked = data.unlocks.rt[i];
       });
       LT_SPELLS.forEach((w,i) => {
           if (w.maxLevel) {
               const saved = data.unlocks.lt[i];
-              if (typeof saved === 'boolean') w.level = saved ? 1 : 0;
+              if (typeof saved === 'boolean') w.level = saved ? 1 : 0; // Legacy convert
               else w.level = saved || (w.costs[0]===0?1:0);
           } else w.unlocked = data.unlocks.lt[i];
       });
@@ -2661,16 +2505,12 @@ function loadState() {
   enemies = [];
 
   for(const ed of data.enemies) {
-    let type = ed.type;
-    if (!type) {
-       type = ed.ranged ? 'gun' : 'melee';
-    }
-    const mesh = makeEnemy(type);
+    const mesh = makeEnemy(ed.ranged);
     mesh.position.set(ed.x, ed.y, ed.z);
     scene.add(mesh);
     enemies.push({
       mesh: mesh,
-      hp: ed.hp, maxHp: ed.maxHp, speed: ed.speed, type: type,
+      hp: ed.hp, maxHp: ed.maxHp, speed: ed.speed, ranged: ed.ranged,
       attackCd: ed.attackCd, alive: true, preferredRange: ed.preferredRange,
       baseColorHex: ed.baseColorHex, frozenTimer: ed.frozenTimer,
       stunTimer: ed.stunTimer, dotTimer: ed.dotTimer, dotDmg: ed.dotDmg,
@@ -2773,7 +2613,7 @@ function frame(now){
     primaryHeldPrev = primaryHeld; secondaryHeldPrev = secondaryHeld;
 
     updateMovement(dt);
-    updateEnemies(dt, now);
+    updateEnemies(dt);
     updateProjectiles(dt);
     updateEffects(dt);
     updateShieldVisual(dt);
